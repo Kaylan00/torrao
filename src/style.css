@@ -613,3 +613,33 @@ body.noite .festa .ceu::after, body.noite .revisao .ceu::after { background: tra
   .meta { padding: 6px 4px; font-size: 13px; }
   .meta img { width: 19px; height: 19px; }
 }
+
+/* ---------- v23: topo e base do quarto mais limpos ---------- */
+/* fora da coluna do app (janela larga no PC): papel kraft em vez de vazio escuro */
+body { background: #6b4a2c url("../assets/papel.jpg") center / 320px; background-blend-mode: multiply; }
+/* a folha rola por inteiro com o papel junto (antes o papel ficava parado e o texto passava por cima do escuro) */
+.folha.papel { background: var(--papel) url("../assets/papel.jpg") center top / 320px; background-blend-mode: multiply; background-attachment: local;
+  clip-path: var(--rasgo-topo); }
+.folha.papel::before, .folha.papel::after { display: none; }
+/* o cartão de hoje fica colado no topo e leva as laranjas e as gotas (sem bilhetes soltos nem viga por cima da parede) */
+.casa .hoje, .casa .hoje { top: 10px; }
+.quarto-base::before { display: none; }
+.hoje-topo { gap: 8px; }
+.hoje-topo .rotulo { flex: 1; }
+.contas { display: inline-flex; gap: 10px; font-weight: 800; font-size: 15px; font-variant-numeric: tabular-nums; }
+.contas span { display: inline-flex; align-items: center; gap: 3px; }
+.contas img { width: 20px; height: 20px; object-fit: contain; }
+.hoje .versao-nova { justify-self: stretch; padding: 7px 10px; font-weight: 900; font-size: 14px; color: var(--tinta); background: var(--laranja-claro, #f4a14b);
+  clip-path: polygon(1% 0, 100% 8%, 99% 100%, 0 90%); }
+.hud-casa { padding-top: 12px; }
+/* base: uma tira de papel firme com os 4 botões (sem círculos e sem o chão emendado por trás) */
+.casa-quarto::after { display: none; }
+.acoes-casa { left: 0; right: 0; bottom: 0; max-width: none; height: 96px; padding: 16px 8px 6px; gap: 0; align-items: center; isolation: isolate; }
+.acoes-casa::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--papel) url("../assets/papel.jpg") center / 260px;
+  background-blend-mode: multiply; clip-path: var(--rasgo-topo); filter: drop-shadow(0 -3px 0 rgba(58, 38, 23, .25)); }
+.acao-redonda { gap: 2px; font-size: 13px; text-shadow: none; padding: 4px 0; }
+.acao-redonda span { width: 46px; height: 46px; background: none; box-shadow: none; }
+.acao-redonda img { width: 42px; height: 42px; }
+@media (max-height: 780px) {
+  .casa .hoje { top: 8px; }
+}

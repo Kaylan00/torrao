@@ -180,11 +180,6 @@
       `<button class="vaga v-${l} ${ui.vaga === l ? 'sel' : ''} ${t.poe[l] ? 'cheia' : ''}" data-acao="vaga" data-lugar="${l}" aria-label="${esc(CF.NOME_LUGAR[l])}">${t.poe[l] ? '' : '+'}</button>`).join('') : '';
     return `<main class="tela casa ${decorando ? 'decorando' : ''}" data-tela="casa">
       <section class="casa-quarto" style="--parede:url('${abs('parede_' + q.id + '.jpg')}'); --chao:url('${abs('chao_' + q.id + '.jpg')}')">
-        <div class="hud hud-casa">
-          ${ui.novaVersao ? `<button class="bilhete versao-nova" data-acao="atualizar">Versão nova!</button>` : ''}
-          <span class="bilhete" title="Laranjas"><img src="${PLANTA('fruta')}" alt="Laranjas">${CF.estado.frutas}</span>
-          <span class="bilhete" title="Frases pra revisar"><img src="${IC('gota')}" alt="Frases pra revisar">${regar.length}</span>
-        </div>
         ${hojeHtml(regar)}
         <div class="quarto-base">
           <img class="quarto-fundo" src="${q.img}" alt="">
@@ -197,7 +192,7 @@
           </div>
         </div>
       <nav class="acoes-casa" aria-label="O que fazer no quarto">
-        <button class="acao-redonda" data-acao="alimentar" ${CF.estado.frutas ? '' : 'disabled'}><span><img src="${PLANTA('fruta')}" alt=""></span>Dar laranja</button>
+        <button class="acao-redonda" data-acao="alimentar"><span><img src="${PLANTA('fruta')}" alt=""></span>Dar laranja</button>
         <button class="acao-redonda" data-acao="folha" data-qual="roupas"><span><img src="assets/roupa/bone.png" alt=""></span>Roupas</button>
         <button class="acao-redonda" data-acao="folha" data-qual="loja"><span><img src="assets/toca/icone.png" alt=""></span>Decorar</button>
         <button class="acao-redonda" data-acao="perguntar"><span><img src="${IC('fala')}" alt=""></span>Perguntar</button>
@@ -235,13 +230,18 @@
   // ---------- o que fazer agora (cartão da tela inicial) ----------
   // ---------- metas de hoje (no quarto, do jeito do Finch) ----------
   const META = { aprender: ['Aprender', 'video'], testar: ['Praticar', 'cerebro'], usar: ['Falar', 'fala'], regar: ['Revisar', 'gota'], resultado: ['Resultado', 'trofeu'] };
+  function contasHtml(regar) {
+    return `<span class="contas"><span title="Laranjas"><img src="${PLANTA('fruta')}" alt="Laranjas">${CF.estado.frutas}</span>`
+      + `<span title="Frases pra revisar"><img src="${IC('gota')}" alt="Frases pra revisar">${regar.length}</span></span>`;
+  }
   function hojeHtml(regar) {
     const s = CF.estado.surpresa;
+    const versao = ui.novaVersao ? `<button class="versao-nova" data-acao="atualizar">Versão nova do app! Toca pra baixar</button>` : '';
     const revisar = regar.length ? `<button class="botao azul mini c1 regar-hoje" data-acao="regar"><img src="${IC('gota')}" alt="">Revisar ${plural(regar.length, 'frase', 'frases')}</button>` : '';
     // terminou um dia hoje: energia cheia, volta amanhã (ou adianta o próximo)
     if (s && s.data === CF.hoje() && !s.feita && s.dia && !ui.adiantar && CF.dia(s.dia + 1)) {
-      return `<div class="papel r2 hoje"><span class="fita"></span>
-        <div class="hoje-topo"><span class="rotulo">Hoje · Dia ${s.dia}</span></div>
+      return `<div class="papel r2 hoje">${versao}
+        <div class="hoje-topo"><span class="rotulo">Hoje · Dia ${s.dia}</span>${contasHtml(regar)}</div>
         <h2>Dia completo!</h2>
         <div class="energia"><span>Energia cheia! Amanhã o Torrão traz uma surpresa.</span><div class="barra verde"><i style="width:100%"></i></div></div>
         <div class="linha-botoes">${revisar}<button class="botao kraft mini c3" data-acao="adiantar">Adiantar o Dia ${s.dia + 1}</button></div>
@@ -254,8 +254,8 @@
       const ok = CF.metaFeita(n, p), [nome, ic] = META[p.id] || [NOME_PASSO[p.id], 'carta'];
       return `<button class="meta ${ok ? 'ok' : ''} ${p === prox ? 'agora' : ''}" data-acao="meta" data-id="${p.id}"><img src="${IC(ok ? 'check' : ic)}" alt="">${esc(nome)}</button>`;
     }).join('');
-    return `<div class="papel r2 hoje"><span class="fita"></span>
-      <div class="hoje-topo"><span class="rotulo">Hoje · Dia ${n}</span><button class="link" data-acao="abrirDia" data-n="${n}">Ver o dia</button></div>
+    return `<div class="papel r2 hoje">${versao}
+      <div class="hoje-topo"><span class="rotulo">Hoje · Dia ${n}</span>${contasHtml(regar)}<button class="link" data-acao="abrirDia" data-n="${n}">Ver o dia</button></div>
       <h2>${esc(d.tema)}</h2>
       <div class="metas">${botoes}</div>
       <div class="energia"><span>Energia do Torrão</span><div class="barra verde"><i style="width:${(feitas / metas.length * 100).toFixed(0)}%"></i></div></div>
@@ -974,6 +974,7 @@
 
   // ---------- ações ----------
   function alimentar(botao) {
+    if (!CF.estado.frutas) { aviso('Sem laranja ainda. Cumpre uma meta de hoje que você ganha.'); return; }
     if (!CF.alimentar()) return;
     const alvo = $conteudo.querySelector('.casa-quarto .pet');
     if (botao && alvo) voar(botao, alvo);
