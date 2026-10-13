@@ -23,6 +23,7 @@
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const IC = n => 'assets/ic/' + n + '.png';
   const PLANTA = n => 'assets/horta/' + n + '.png';
+  const fraseEn = c => (c.tipo === 'ouvir' ? c.pt : c.en[0]);
   const PET_IMG = (fase, humor) => 'assets/pet/' + (fase + 1) + '-' + humor + '.png';
   const ESTAGIO = ['Semente', 'Broto', 'Muda', 'Árvore', 'Árvore com laranjas', 'Árvore com laranjas', 'Árvore com laranjas'];
   const plural = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
@@ -121,6 +122,7 @@
         <div class="papel r4"><span class="fita"></span>
           <h1>O Torrão evoluiu!</h1>
           <p>Agora ele é <b>${esc(f.nome)}</b>. É o seu estudo fazendo ele crescer.</p>
+          ${Number.isInteger(CF.estado.idade) ? '<p style="font-weight:600">No quarto ele continua na idade que você escolheu. Pra ver ele crescer, escolhe "Crescendo" em Roupas.</p>' : ''}
           <p style="font-weight:600">${esc(CF.CATALOGO[CF.nivelCatalogo(CF.pontosTotal())][1])}</p>
         </div>
         <button class="botao grande laranja" data-acao="fechar">Bora!</button>
@@ -169,7 +171,7 @@
   // botões redondos embaixo (laranja, roupas, decorar, janela) e o cartão do próximo passo.
   const PET_NO_QUARTO = [0.30, 0.37, 0.41, 0.45];   // altura do Torrão em fração da altura do quarto
   function telaCasa() {
-    const pts = CF.pontosTotal(), fase = CF.fasePet(pts), humor = CF.humor();
+    const pts = CF.pontosTotal(), fase = CF.faseMostrada(), humor = CF.humor();
     const regar = CF.paraRegar(), t = CF.toca(), m = CF.mundoEscolhido();
     const fala = ui.fala || falaPadrao();
     const larg = Math.min($app.clientWidth || 375, 480), alt = larg * 4 / 3;
@@ -221,9 +223,9 @@
     } else {
       horta = '<div class="lotes">' + ordem.map((id, i) => {
         const c = CF.TODAS_CARTAS[id], sede = CF.precisaAgua(id);
-        return `<button class="lote" data-acao="planta" data-id="${id}" aria-label="${esc(c.en[0])}${sede ? ', pedindo revisão' : ''}" style="--d:${(-(i * 0.73) % 5).toFixed(2)}s; --t:${(4.6 + (i % 4) * 0.5).toFixed(1)}s">
+        return `<button class="lote" data-acao="planta" data-id="${id}" aria-label="${esc(fraseEn(c))}${sede ? ', pedindo revisão' : ''}" style="--d:${(-(i * 0.73) % 5).toFixed(2)}s; --t:${(4.6 + (i % 4) * 0.5).toFixed(1)}s">
           <img class="planta" src="${PLANTA(CF.imgPlanta(id))}" alt="">${sede ? `<img class="gotinha" src="${IC('gota')}" alt="">` : ''}
-          <span class="tira">${esc(c.en[0])}</span></button>`;
+          <span class="tira">${esc(fraseEn(c))}</span></button>`;
       }).join('') + '</div>';
     }
     return `<main class="tela" data-tela="horta">
@@ -247,12 +249,12 @@
     const versao = ui.novaVersao ? `<button class="versao-nova" data-acao="atualizar">Versão nova do app! Toca pra baixar</button>` : '';
     const revisar = regar.length ? `<button class="botao azul mini c1 regar-hoje" data-acao="regar"><img src="${IC('gota')}" alt="">Revisar ${plural(regar.length, 'frase', 'frases')}</button>` : '';
     // terminou um dia hoje: energia cheia, volta amanhã (ou adianta o próximo)
-    if (s && s.data === CF.hoje() && !s.feita && s.dia && !ui.adiantar && CF.dia(s.dia + 1)) {
+    if (s && s.data === CF.hoje() && !s.feita && s.dia && !s.adiantou && !CF.diaCompleto(CF.diaAtual())) {
       return `<div class="papel r2 hoje">${versao}
         <div class="hoje-topo"><span class="rotulo">Hoje · Dia ${s.dia}</span>${contasHtml(regar)}</div>
         <h2>Dia completo!</h2>
         <div class="energia"><span>Energia cheia! Amanhã o Torrão traz uma surpresa.</span><div class="barra verde"><i style="width:100%"></i></div></div>
-        <div class="linha-botoes">${revisar}<button class="botao kraft mini c3" data-acao="adiantar">Adiantar o Dia ${s.dia + 1}</button></div>
+        <div class="linha-botoes">${revisar}<button class="botao kraft mini c3" data-acao="adiantar">Adiantar o Dia ${CF.diaAtual()}</button></div>
       </div>`;
     }
     const n = CF.diaAtual(), d = CF.dia(n), metas = CF.metas(n);
@@ -274,11 +276,11 @@
   // ---------- apresentação (primeira vez) ----------
   const INTRO = [
     { t: 'Oi, eu sou o Torrão!', p: 'Vou te ajudar a falar inglês. Um pouquinho por dia.', img: 'pet' },
-    { t: 'Todo dia, 3 metas', p: 'Aprende as frases, pratica escrevendo e fala um pouco. Uns 20 minutos.', img: 'plantas' },
+    { t: 'Metas curtinhas todo dia', p: 'Aprende as frases, pratica escrevendo e fala um pouco. Uns 20 minutos (e tem dia leve).', img: 'plantas' },
     { t: 'Acertou, ganha laranja', p: 'Cada frase vira uma planta. Laranja me alimenta e decora meu quarto.', img: 'fruta' }
   ];
   function intro(i) {
-    const x = INTRO[i], ultimo = i === INTRO.length - 1, fase = CF.fasePet(CF.pontosTotal());
+    const x = INTRO[i], ultimo = i === INTRO.length - 1, fase = CF.faseMostrada();
     const figura = x.img === 'pet' ? CF.petHtml(fase, 'tranquilo', 200, 'data-solto="0"')
       : x.img === 'plantas' ? `<div class="intro-plantas"><img src="${PLANTA('broto-murcho')}" alt=""><img src="${PLANTA('frutos')}" alt=""></div>`
         : `<img class="intro-fruta" src="${PLANTA('fruta')}" alt="">`;
@@ -287,7 +289,7 @@
         ${figura}
         <div class="papel r4"><span class="fita"></span><h1>${esc(x.t)}</h1><p>${esc(x.p)}</p></div>
         <div class="pontinhos">${INTRO.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
-        ${ultimo ? `<button class="botao grande laranja c2" data-acao="introFim">Começar o Dia ${CF.diaAtual()}</button>`
+        ${ultimo ? `<button class="botao grande laranja c2" data-acao="introFim">Bora!</button>`
           : `<button class="botao grande laranja c2" data-acao="introProx" data-i="${i + 1}">Próximo</button><button class="link" data-acao="introPular">Pular</button>`}
       </div></div>`;
     CF.montarPets($camada);
@@ -331,7 +333,7 @@
         caminho += ` C ${ax} ${(a.y + y) / 2}, ${x} ${(a.y + y) / 2}, ${x} ${y}`;
       }
     });
-    const fase = CF.fasePet(CF.pontosTotal());
+    const fase = CF.faseMostrada();
     const html = pos.map((p, i) => {
       if (p.semana) return `<div class="semana papel r${(p.semana % 6) + 1}" style="top:${p.y}px">Semana ${p.semana}</div>`;
       const d = p.d, feito = CF.diaCompleto(d.n), eAtual = d.n === atual;
@@ -385,7 +387,7 @@
 
   function abrirFolha(qual) {
     ui.folha = qual;
-    const pts = CF.pontosTotal(), fase = CF.fasePet(pts);
+    const pts = CF.pontosTotal(), fase = CF.faseMostrada();
     const titulo = qual === 'roupas' ? 'Roupas' : 'Decorar';
     const antiga = $camada.querySelector('.folha');
     const y = antiga ? antiga.scrollTop : 0;
@@ -409,6 +411,29 @@
     if (f) f.scrollTop = y;
     if (antiga) $camada.querySelectorAll('.escuro, .folha').forEach(el => { el.style.animation = 'none'; });   // já estava aberta: sem piscar
     CF.montarPets($camada);
+    if (qual === 'roupas') subirQuarto(); else encaixarDecorar();
+  }
+
+  function encaixarDecorar() {
+    const casa = $conteudo.querySelector('.tela.casa'), base = casa && casa.querySelector('.quarto-base');
+    const f = $camada.querySelector('.folha');
+    if (!base || !f) return;
+    const topo = casa.getBoundingClientRect().top + base.offsetTop, alt = base.offsetHeight;
+    const livre = window.innerHeight - f.offsetHeight - 8 - 8;
+    const s = Math.min(1, livre / alt);
+    base.style.setProperty('--dy', Math.round(Math.max(8, window.innerHeight - f.offsetHeight - 8 - alt * s) - topo) + 'px');
+    base.style.setProperty('--s', s.toFixed(3));
+  }
+
+  // roupas: o quarto sobe até o Torrão ficar inteiro acima da folha (cada celular tem uma altura)
+  function subirQuarto() {
+    const casa = $conteudo.querySelector('.tela.casa'), base = casa && casa.querySelector('.quarto-base');
+    const pet = base && base.querySelector('.pet'), f = $camada.querySelector('.folha');
+    if (!pet || !f) return;
+    casa.classList.add('vestindo');
+    base.style.setProperty('--sobe', '0px');
+    const falta = pet.getBoundingClientRect().bottom - window.innerHeight * 0.44 + 14;   // a folha de roupas sempre enche os 56vh dela (as imagens ainda podem estar carregando)
+    base.style.setProperty('--sobe', Math.max(0, Math.round(falta)) + 'px');
   }
 
   // ---------- escolher o cenário ----------
@@ -458,6 +483,7 @@
       ic = 'fala';
       if (d.tipo === 'chefao') titulo = 'Chefão: 20 min sem português';
       resumo = d.tipo === 'desafio' ? 'Hoje, se der, conversa com uma pessoa de verdade.' : 'Conversa em inglês: escrevendo com o Torrão, por voz com uma IA ou com alguém.';
+      if (d.aprender) detalhe = `<p>${esc(d.aprender)}</p>`;
       acoes = `<button class="botao mini ${r.usar ? 'on' : 'laranja'} c2" data-acao="falarDia" data-n="${d.n}">${r.usar ? ok('Feito (mudar)') : 'Falar'}</button>`;
     } else if (p.id === 'anki') {
       ic = 'carta'; resumo = '10 minutos no Anki com as palavras mais comuns.';
@@ -466,7 +492,7 @@
     } else if (p.id === 'regar') {
       ic = 'gota'; resumo = 'Dia leve: revisa as frases que estão pedindo e descansa.';
       const sede = CF.paraRegar().length;
-      acoes = sede && !marcado ? `<button class="botao mini azul c1" data-acao="regarDia" data-n="${d.n}"><img src="${IC('gota')}" alt="">Revisar ${sede}</button>` : feito(sede ? 'Revisei' : 'Tudo revisado');
+      acoes = sede && !marcado ? `<button class="botao mini azul c1" data-acao="regarDia" data-n="${d.n}"><img src="${IC('gota')}" alt="">Revisar ${sede}</button>` : feito(sede ? 'Revisei' : 'Marcar como feito');
     } else if (p.id === 'efset') {
       ic = 'trofeu'; resumo = 'Teste de nível grátis (uns 50 minutos). Faz num dia com calma.';
       detalhe = `<p>O EF SET dá seu nível no padrão internacional (A1 a C2). ${d.n === 1 ? 'Fazendo agora você sabe de onde está partindo.' : 'Compara com o resultado anterior: é a prova de que você evoluiu.'}</p>`;
@@ -516,8 +542,9 @@
     const nivel = CF.nivelCatalogo(pts);
     const feitos = CF.DIAS.filter(d => CF.diaCompleto(d.n)).length;
     const cresc = prox ? ((pts - CF.FASES_PET[fase].min) / (prox.min - CF.FASES_PET[fase].min) * 100) : 100;
-    const evol = CF.FASES_PET.map((f, k) => `<figure class="${k > fase ? 'trancado' : ''} ${k === fase ? 'agora' : ''}">
-      <img src="${PET_IMG(k, 'tranquilo')}" alt="${esc(f.nome)}"><figcaption>${esc(f.nome)}</figcaption></figure>`).join('');
+    const vendo = CF.faseMostrada();
+    const evol = CF.FASES_PET.map((f, k) => `<button class="${k === vendo ? 'agora' : ''}" data-acao="idade" data-k="${k}" aria-label="Mostrar o Torrão ${esc(f.nome)}">
+      <img src="${PET_IMG(k, 'tranquilo')}" alt=""><span>${esc(f.nome)}</span></button>`).join('');
     const agora = CF.CATALOGO[nivel], depois = CF.CATALOGO[nivel + 1];
     const caminho = CF.CATALOGO.map((c, k) => `<div class="nivel ${k <= nivel ? 'ok' : ''} ${k === nivel ? 'agora' : ''}"><b>${k <= nivel ? `<img src="${IC('check')}" alt="">` : ''}</b><p>${esc(c[1])}</p></div>`).join('');
     const ia = CF.ia.cfg();
@@ -530,6 +557,7 @@
           <div class="barra verde"><i style="width:${cresc.toFixed(0)}%"></i></div>
           <p style="margin:0; font-weight:700">${prox ? `Crescendo pra virar ${esc(prox.nome)}: ${cresc.toFixed(0)}%` : 'Ele chegou na fase final!'}</p>
           <div class="evolucao">${evol}</div>
+          <p class="ia-status" style="margin:0">Todas as idades estão liberadas: toca numa pra ver ele assim no quarto.</p>
         </section>
         <div class="stats">
           <div class="stat papel r4"><img src="${IC('chama')}" alt=""><b>${CF.sequencia()}</b><span>dias seguidos</span></div>
@@ -593,8 +621,16 @@
         <img src="${PET_IMG(fase, 'tranquilo')}" alt="" style="${livre && f ? 'filter:' + f : ''}"><span>${esc(k.nome)}</span>
         <small>${livre ? (on ? 'usando' : 'tocar pra usar') : k.pts + ' pontos'}</small></button>`;
     }).join('');
+    const escolhida = Number.isInteger(CF.estado.idade) ? CF.estado.idade : null;
+    const idades = CF.FASES_PET.map((f, k) => `<button class="peca idade ${escolhida === k ? 'vestida' : ''}" data-acao="idade" data-k="${k}">
+        <img src="${PET_IMG(k, 'tranquilo')}" alt=""><span>${esc(f.nome)}</span><small>${escolhida === k ? 'usando' : 'tocar pra usar'}</small></button>`).join('')
+      + `<button class="peca idade ${escolhida === null ? 'vestida' : ''}" data-acao="idade" data-k="">
+        <img src="${PET_IMG(CF.fasePet(pts), 'tranquilo')}" alt=""><span>Crescendo</span><small>${escolhida === null ? 'usando' : 'cresce com o estudo'}</small></button>`;
     return `<section class="guarda" style="display:grid; gap:12px">
       <div class="provador">${CF.petHtml(fase, 'tranquilo', 170, 'data-solto="0"')}</div>
+      <h3 style="font-size:19px">Idade</h3>
+      <div class="pecas idades">${idades}</div>
+      <h3 style="font-size:19px; margin-top:6px">Roupas</h3>
       <p style="margin:0; font-weight:700; text-align:center">${prox ? `Próxima peça: ${esc(prox.nome)}, com ${prox.pts} pontos (faltam ${prox.pts - pts}).` : 'Todas as peças e skins estão liberadas. Escolhe à vontade!'}</p>
       <div class="pecas">${pecas}</div>
       ${cores}
@@ -618,9 +654,9 @@
       <div class="folha-topo"><span class="rotulo">${ESTAGIO[st.e]} · Dia ${c.dia}</span>${FECHAR('fechar')}</div>
       <div style="display:grid; grid-template-columns:120px minmax(0,1fr); gap:12px; align-items:center">
         <img src="${PLANTA(CF.imgPlanta(id))}" alt="" style="width:120px; animation: boia 5s ease-in-out infinite">
-        <div style="display:grid; gap:6px"><div class="resposta-linha"><span class="en">${esc(c.en[0])}</span>
-          ${CF.temVoz() ? `<button class="ouvir" data-acao="falar" data-texto="${esc(c.en[0])}" aria-label="Ouvir"><img src="${IC('fone')}" alt=""></button>` : ''}</div>
-          <span style="font-weight:600; color:var(--tinta-2)">${esc(c.pt)}</span></div>
+        <div style="display:grid; gap:6px"><div class="resposta-linha"><span class="en">${esc(fraseEn(c))}</span>
+          ${CF.temVoz() ? `<button class="ouvir" data-acao="falar" data-texto="${esc(fraseEn(c))}" aria-label="Ouvir"><img src="${IC('fone')}" alt=""></button>` : ''}</div>
+          <span style="font-weight:600; color:var(--tinta-2)">${c.tipo === 'ouvir' ? 'Responde, por exemplo: ' + esc(c.en[0]) : esc(c.pt)}</span></div>
       </div>
       <p style="margin:0; font-weight:700">${quando}</p>
       ${sede ? `<button class="botao grande azul cheio c2" data-acao="regarUma" data-id="${id}"><img src="${IC('gota')}" alt="">Revisar agora</button>`
@@ -751,7 +787,7 @@
   }
 
   function renderFim() {
-    const fase = CF.fasePet(CF.pontosTotal());
+    const fase = CF.faseMostrada();
     const titulo = rev.modo === 'teste' ? 'Prática feita!' : rev.modo === 'treino' ? 'Treino feito!' : 'Revisão feita!';
     const ganhos = [`<span class="bilhete"><img src="${IC('check')}" alt="">${plural(rev.ok, 'acerto', 'acertos')}</span>`];
     if (rev.modo !== 'treino') {
@@ -808,7 +844,7 @@
         </div>
         <button class="botao grande laranja cheio c2" data-acao="aprProx">Começar</button>`;
     } else if (apr.pos >= total) {
-      corpo = `<div class="rev-fim">${CF.petHtml(CF.fasePet(CF.pontosTotal()), 'tranquilo', 180, 'data-solto="0"')}
+      corpo = `<div class="rev-fim">${CF.petHtml(CF.faseMostrada(), 'tranquilo', 180, 'data-solto="0"')}
         <div class="papel r4 torto-e" style="display:grid; gap:10px; justify-items:center"><span class="fita"></span>
           <h2>Aprendeu as ${total} frases!</h2>
           <p style="margin:0; font-weight:600; text-align:center; max-width:30ch">Elas viraram sementes na sua horta. Agora pratica escrevendo pra elas brotarem.</p></div>
@@ -818,22 +854,23 @@
       const c = CF.TODAS_CARTAS[apr.ids[apr.pos]];
       corpo = `<div class="bilhete-rev papel r3 apr-carta"><span class="fita"></span>
           <div class="rev-dica">FRASE ${apr.pos + 1} DE ${total}</div>
-          <div class="resposta-linha" style="justify-content:center"><span class="en apr-en">${esc(c.en[0])}</span>${ouvirBtn(c.en[0])}</div>
-          <div class="apr-pt">${esc(c.pt)}</div>
-          ${c.en.length > 1 ? `<div class="tambem">Também dá pra dizer: ${c.en.slice(1).map(o => '<b>' + esc(o) + '</b>').join(' · ')}</div>` : ''}
+          <div class="resposta-linha" style="justify-content:center"><span class="en apr-en">${esc(fraseEn(c))}</span>${ouvirBtn(fraseEn(c))}</div>
+          ${c.tipo === 'ouvir'
+            ? `<div class="apr-pt">Alguém te pergunta isso. Jeitos de responder:</div><div class="tambem">${c.en.map(o => '<b>' + esc(o) + '</b>').join(' · ')}</div>`
+            : `<div class="apr-pt">${esc(c.pt)}</div>${c.en.length > 1 ? `<div class="tambem">Também dá pra dizer: ${c.en.slice(1).map(o => '<b>' + esc(o) + '</b>').join(' · ')}</div>` : ''}`}
           ${c.dica ? `<div class="tambem">${esc(c.dica)}</div>` : ''}
-          <div style="display:flex; justify-content:center"><button class="link" data-acao="perguntarFrase" data-texto="${esc(c.en[0])}">Tenho uma dúvida sobre essa frase</button></div>
+          <div style="display:flex; justify-content:center"><button class="link" data-acao="perguntarFrase" data-texto="${esc(fraseEn(c))}">Tenho uma dúvida sobre essa frase</button></div>
         </div>
         <div class="linha-botoes apr-nav">
           <button class="botao kraft c1" data-acao="aprVolta">Voltar</button>
           <button class="botao grande laranja c2" data-acao="aprProx">${apr.pos + 1 < total ? 'Próxima' : 'Terminei'}</button></div>`;
     }
-    const feitas = Math.max(0, Math.min(apr.pos, total));
+    const feitas = Math.max(0, Math.min(apr.pos + 1, total));
     $camada.innerHTML = `<div class="revisao estudo" role="dialog" aria-label="Aula de hoje"><div class="ceu"></div><div class="rev">
       <div class="rev-topo">${FECHAR('fecharApr')}<div class="barra verde"><i style="width:${(feitas / total * 100).toFixed(0)}%"></i></div><span class="rev-cont">${feitas}/${total}</span></div>
       ${corpo}</div></div>`;
     CF.montarPets($camada);
-    if (apr.pos >= 0 && apr.pos < total) { const c = CF.TODAS_CARTAS[apr.ids[apr.pos]]; setTimeout(() => CF.falar(c.en[0]), 250); }
+    if (apr.pos >= 0 && apr.pos < total) { const c = CF.TODAS_CARTAS[apr.ids[apr.pos]]; setTimeout(() => CF.falar(fraseEn(c)), 250); }
   }
 
   function terminarAprender() {
@@ -850,7 +887,7 @@
   // ---------- falar: conversa escrita com o Torrão, ou marcar o que fez ----------
   function abrirFalar(n) {
     const d = CF.dia(n), r = CF.registro(n), p = CF.passos(d).find(x => x.id === 'usar');
-    const nomes = { 10: 'Falei sozinho em voz alta', 20: 'Conversei com uma IA por voz', 30: 'Conversei com uma pessoa' };
+    const nomes = { 10: 'Falei sozinho em voz alta', 20: 'Conversei com uma IA', 30: 'Conversei com uma pessoa' };
     $camada.innerHTML = `<div class="escuro" data-acao="fecharFora"><div class="folha papel" role="dialog" aria-label="Falar">
       <div class="folha-topo"><div style="display:grid; gap:4px"><span class="rotulo">Dia ${n} · Falar</span><h2>Bora falar inglês</h2></div>${FECHAR('fechar')}</div>
       <p style="margin:0; font-weight:600">O jeito mais fácil: conversa escrevendo com o Torrão. Ele corrige seus erros com jeitinho.</p>
@@ -875,7 +912,7 @@
   function renderChat() {
     if (!chat) return;
     const ia = CF.ia.pronta(), conversa = chat.modo === 'conversa';
-    const minhas = chat.msgs.filter(m => m.role === 'user').length;
+    const minhas = Math.max(0, chat.msgs.filter(m => m.role === 'assistant').length - 1);   // trocas respondidas (a 1ª fala é o "oi")
     const bolhas = chat.msgs.map(m => {
       if (m.role === 'erro') return `<div class="msg erro">${esc(m.content)}</div>`;
       const meu = m.role === 'user';
@@ -988,7 +1025,7 @@
     if (botao && alvo) voar(botao, alvo);
     CF.som.come(); CF.vibra(30);
     CF.marcarAtividade(); CF.salvar();
-    ui.fala = { pt: ['Hmm, essa tava boa.', 'Agora sim.', 'Valeu. Continua regando que vem mais.'][Math.floor(Math.random() * 3)] };
+    ui.fala = { pt: ['Hmm, essa tava boa.', 'Agora sim.', 'Valeu. Continua revisando que vem mais.'][Math.floor(Math.random() * 3)] };
     render();
     setTimeout(() => { const p = petAtual(); if (p) { p.humor = 'tranquilo'; p.comer(); } }, 450);
     clearTimeout(alimentar.t);
@@ -1039,7 +1076,9 @@
     CF.salvar();
     ui.ultimoDia = n;
     const daFolha = diaAberto === n;
-    iniciarRevisao(ids, 'teste', () => { CF.registro(n).testar = true; CF.marcarAtividade(); CF.salvar(); });
+    const jaFez = CF.registro(n).testar;
+    iniciarRevisao(ids, jaFez ? 'treino' : 'teste', () => { CF.registro(n).testar = true; CF.marcarAtividade(); CF.salvar(); });
+    if (jaFez) aviso('Treino extra: não muda a revisão das frases.');
     rev.dia = daFolha ? n : null;
   }
 
@@ -1065,7 +1104,7 @@
         } else abrirDia(n);
         break;
       }
-      case 'adiantar': ui.adiantar = true; CF.som.toque(); render(); break;
+      case 'adiantar': if (CF.estado.surpresa) { CF.estado.surpresa.adiantou = true; CF.salvar(); } CF.som.toque(); render(); break;
       case 'atualizar': CF.som.toque(); abrirAtualizacao(); break;
       case 'conferirVersao': checarAtualizacao(true); break;
       case 'aprenderDia': CF.som.toque(); abrirAprender(Number(b.dataset.n)); break;
@@ -1076,10 +1115,11 @@
       case 'perguntarFrase': abrirChat('duvida', apr ? apr.n : CF.diaAtual(), `Me explica a frase "${b.dataset.texto}": quando usar e como responder.`); break;
       case 'perguntar': CF.som.toque(); abrirChat('duvida'); break;
       case 'falarDia': CF.som.toque(); abrirFalar(Number(b.dataset.n)); break;
-      case 'abrirConversa': CF.som.toque(); diaAberto = null; abrirChat('conversa', Number(b.dataset.n)); break;
+      case 'abrirConversa': CF.som.toque(); abrirChat('conversa', Number(b.dataset.n)); break;
       case 'usarFalar': {
         const n = Number(b.dataset.n), r = CF.registro(n), v = Number(b.dataset.v);
-        r.usar = r.usar === v ? 0 : v; ui.ultimoDia = n;
+        if (r.usar === v) { aviso('Isso já está marcado.'); fecharCamada(); break; }
+        r.usar = v; ui.ultimoDia = n;
         if (r.usar) { CF.marcarAtividade(); CF.som.marca(); CF.vibra(15); const q = CF.ganharPasso(n, 'usar', v); if (q) aviso(`+${q} ${q === 1 ? 'laranja' : 'laranjas'}`); }
         CF.salvar(); fecharCamada(); break;
       }
@@ -1119,6 +1159,13 @@
         { const el = $conteudo.querySelector('.casa-quarto [data-pet]'); if (el && el._pet) setTimeout(() => el._pet.pular(true), 40); }
         break;
       }
+      case 'idade': {
+        CF.usarIdade(b.dataset.k === '' ? null : Number(b.dataset.k));
+        CF.som.marca(); render();
+        if (ui.tela === 'casa') abrirFolha('roupas');
+        { const el = $conteudo.querySelector('.casa-quarto [data-pet]'); if (el && el._pet) setTimeout(() => el._pet.pular(true), 40); }
+        break;
+      }
       case 'skin': {
         const k = CF.SKINS.find(x => x.id === b.dataset.id);
         if (!k) break;
@@ -1131,7 +1178,7 @@
       case 'comprarMovel': {
         const m = CF.MOVEIS.find(x => x.id === b.dataset.id);
         if (!m) break;
-        if (CF.estado.frutas < m.preco) { aviso(`Faltam ${m.preco - CF.estado.frutas} laranjas. Rega a horta pra ganhar mais!`); break; }
+        if (CF.estado.frutas < m.preco) { aviso(`Faltam ${m.preco - CF.estado.frutas} laranjas. Cumpre as metas e revisa as frases pra ganhar mais!`); break; }
         CF.comprarMovel(m.id); ui.novoMovel = m.id; CF.som.festa(); CF.vibra(30); aviso(`${m.nome} no quarto!`); render(); abrirFolha('loja');
         { const el = $conteudo.querySelector('.casa-quarto [data-pet]'); if (el && el._pet) setTimeout(() => el._pet.pular(), 60); }
         break;
@@ -1160,7 +1207,14 @@
       case 'teste': fazerTeste(diaAberto); break;
       case 'copiar': copiar(b.dataset.texto); break;
       case 'link': abrirLink(b.dataset.url); break;
-      case 'regar': CF.som.agua(); iniciarRevisao(CF.paraRegar(), 'regar'); break;
+      case 'regar': {
+        CF.som.agua();
+        const n = CF.diaAtual();
+        iniciarRevisao(CF.paraRegar(), 'regar', () => {
+          if (CF.metas(n).some(p => p.id === 'regar')) { CF.registro(n).regar = true; CF.ganharPasso(n, 'regar'); CF.marcarAtividade(); CF.salvar(); }
+        });
+        break;
+      }
       case 'regarUma': CF.som.agua(); iniciarRevisao([b.dataset.id], 'regar'); break;
       case 'treinarUma': iniciarRevisao([b.dataset.id], 'treino'); break;
       case 'alimentar': alimentar(b); break;
@@ -1168,7 +1222,7 @@
       case 'pet': {
         const ids = CF.plantas();
         const c = ids.length ? CF.TODAS_CARTAS[ids[Math.floor(Math.random() * ids.length)]] : null;
-        ui.fala = c ? { en: c.en[0], pt: c.pt } : { en: "Hi! I'm Torrão.", pt: 'Oi! Eu sou o Torrão.' };
+        ui.fala = c ? (c.tipo === 'ouvir' ? { en: c.pt, pt: 'Me responde em inglês!' } : { en: c.en[0], pt: c.pt }) : { en: "Hi! I'm Torrão.", pt: 'Oi! Eu sou o Torrão.' };
         CF.falar(ui.fala.en);
         render();
         setTimeout(() => { const p = petAtual(); if (p) p.pular(); }, 30);
@@ -1198,6 +1252,8 @@
   // botão voltar do Android (o APK chama esta função)
   window.CF_voltar = function () {
     if (chat) { fecharChat(); return true; }
+    if ($camada.querySelector('.intro')) { CF.estado.introVista = true; CF.salvar(); $camada.innerHTML = ''; render(); return true; }
+    if (apr && apr.pos > 0 && apr.pos < apr.ids.length) { apr.pos--; renderAprender(); return true; }
     if ($camada.innerHTML) { fecharCamada(); return true; }
     if (ui.tela !== 'casa') { ui.tela = 'casa'; render(); return true; }
     return false;

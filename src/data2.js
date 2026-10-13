@@ -100,7 +100,7 @@ window.CF = window.CF || {};
       ]),
     N(32, 'Jogos competitivos', ['We won / We lost', 'My teammate...', "I'm stuck in...", 'Good game'],
       'vocabulário de games em inglês: gamer slang e expressões', 'Talk with me about my last ranked games in League of Legends.', [
-        ['d32a', 'Diz que vocês ganharam por pouco.', ['We barely won.', 'It was a close win.', 'We won by a little.']],
+        ['d32a', 'Diz que vocês ganharam por pouco.', ['We barely won.', 'It was a close win.', 'We just barely won.']],
         ['d32b', 'Diz que seu colega de time ficou AFK o jogo todo.', ['My teammate was AFK the whole game.']],
         ['d32c', 'Diz que você está preso no ouro.', ["I'm stuck in Gold.", "I'm hardstuck Gold."]],
         ['d32d', 'Diz que o outro time era mais forte.', ['The other team was stronger.', 'The enemy team was stronger.']],
@@ -192,7 +192,7 @@ window.CF = window.CF || {};
         ['d46b', 'Pergunta se pode usar o banheiro.', ['Can I use the bathroom?', 'Can I use the restroom?', 'May I use the bathroom?']],
         ['d46c', 'Pergunta com educação se seria possível sair mais cedo.', ['Would it be possible to leave early?', 'Would it be possible to leave a bit earlier?']],
         ['d46d', 'Alguém pede permissão. Diz "pode, fica à vontade".', ['Go ahead.', 'Sure, go ahead.', 'Of course, go ahead.']],
-        ['d46e', 'Do you mind if I sit here?', ['No, go ahead.', 'Not at all, sit down.', 'Sorry, someone is sitting there.'], '', O]
+        ['d46e', 'Do you mind if I sit here?', ['No, go ahead.', 'Not at all, have a seat.', 'Sorry, someone is sitting there.'], '', O]
       ]),
     N(47, 'Possibilidades', ['It might...', 'Maybe...', "I'm not sure, but...", 'Probably'],
       'might, maybe e probably em inglês: falar de possibilidades', 'Ask me about my plans, and I will answer with maybe, might and probably.', [

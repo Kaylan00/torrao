@@ -5,6 +5,8 @@ window.CF = window.CF || {};
 
 (function () {
   let ctx = null, saida = null, eco = null, ruidoBuf = null;
+  // ?mudo=1 no endereço: testes sem barulho nenhum (nem voz), sem mexer no ajuste salvo de som
+  const MUDO = /[?&]mudo=1/.test(location.search);
 
   function montar(a) {
     const comp = a.createDynamicsCompressor();
@@ -28,7 +30,7 @@ window.CF = window.CF || {};
   }
 
   function audio() {
-    if (!CF.estado || !CF.estado.som) return null;
+    if (MUDO || !CF.estado || !CF.estado.som) return null;
     try {
       if (!ctx) { ctx = new (window.AudioContext || window.webkitAudioContext)(); montar(ctx); }
       if (ctx.state === 'suspended') ctx.resume();
@@ -143,10 +145,11 @@ window.CF = window.CF || {};
     }
   };
 
-  CF.vibra = ms => { try { if (CF.estado.som && navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* sem vibração */ } };
+  CF.vibra = ms => { try { if (!MUDO && CF.estado.som && navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* sem vibração */ } };
 
   // Voz: no APK usa o leitor do Android (ponte "Nativo"); no navegador usa a voz do próprio navegador.
   CF.falar = function (texto) {
+    if (MUDO) return true;
     const limpo = texto.replace(/\.\.\./g, '').replace(/[()]/g, '');
     try {
       if (window.Nativo && window.Nativo.falar) { window.Nativo.falar(limpo); return true; }

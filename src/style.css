@@ -654,3 +654,20 @@ body { background: #6b4a2c url("../assets/papel.jpg") center / 320px; background
 .pet[data-humor="seco"] { animation-duration: 5s; }
 .pet::after { transition: transform .25s ease-out, opacity .25s; }
 .pet.no-ar::after { transform: translateX(-50%) scale(.7); opacity: .6; }
+
+/* idades do Torrão (todas liberadas) */
+.evolucao button { display: grid; justify-items: center; gap: 4px; padding: 4px 2px 6px; border-radius: 10px; transition: transform .15s; }
+.evolucao button img { height: 86px; width: auto; object-fit: contain; }
+.evolucao button span { font-size: 11.5px; font-weight: 800; color: var(--tinta-2); text-align: center; }
+.evolucao button.agora { background: rgba(244, 161, 75, .28); }
+.evolucao button.agora span { color: var(--laranja-escuro); }
+.evolucao button:active { transform: scale(.94); }
+.peca.idade img { height: 74px; width: auto; object-fit: contain; }
+
+/* roupas abertas: o quarto sobe pro Torrão aparecer inteiro acima da folha */
+.casa.vestindo .quarto-base { transform: translate(-50%, calc(-1 * var(--sobe, 0px))); }
+.casa.vestindo .hoje, .casa.vestindo .acoes-casa, .casa.vestindo .fala-casa { display: none; }
+
+/* decorar: quarto encaixado acima da faixa de itens (medido no app.js) */
+.quarto-base { transform-origin: 50% 0; }
+.casa.decorando .quarto-base { transform: translate(-50%, var(--dy, -96px)) scale(var(--s, 1)); }

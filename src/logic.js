@@ -231,7 +231,7 @@ window.CF = window.CF || {};
       c.due = CF.somaDias(CF.hoje(), 1);
     } else {
       c.e = Math.max(c.e - 1, 0);
-      c.due = CF.hoje();
+      c.due = CF.somaDias(CF.hoje(), 1);
       c.erro++;
     }
     CF.estado.frutas += frutas;
@@ -280,6 +280,12 @@ window.CF = window.CF || {};
     const s = CF.SKINS.find(x => x.id === CF.estado.skin);
     return s && CF.skinLiberada(s.id) ? s : CF.SKINS[0];
   };
+  // idade que aparece na tela: a escolhida pela pessoa (todas liberadas) ou, sem escolha, a que o estudo já alcançou
+  CF.faseMostrada = function () {
+    const e = CF.estado.idade;
+    return Number.isInteger(e) && CF.FASES_PET[e] ? e : CF.fasePet(CF.pontosTotal());
+  };
+  CF.usarIdade = function (k) { CF.estado.idade = Number.isInteger(k) && CF.FASES_PET[k] ? k : null; CF.salvar(); };
   CF.usarSkin = function (id) { if (!CF.skinLiberada(id)) return false; CF.estado.skin = id; CF.salvar(); return true; };
   CF.corDaRoupa = id => CF.CORES_ROUPA.find(c => c.id === ((CF.estado.corRoupa || {})[id] || 'original')) || CF.CORES_ROUPA[0];
   CF.trocarCorRoupa = function (id, cor) { CF.estado.corRoupa = CF.estado.corRoupa || {}; CF.estado.corRoupa[id] = cor; CF.salvar(); };
@@ -338,6 +344,7 @@ window.CF = window.CF || {};
     .replace(/\bdon't\b/g, 'do not').replace(/\bdidn't\b/g, 'did not').replace(/\bisn't\b/g, 'is not')
     .replace(/\bi'll\b/g, 'i will').replace(/\bi've\b/g, 'i have').replace(/\blet's\b/g, 'let us')
     .replace(/\bwhat's\b/g, 'what is').replace(/\bthere's\b/g, 'there is').replace(/\bi'd\b/g, 'i would')
+    .replace(/\byou're\b/g, 'you are').replace(/\bwe're\b/g, 'we are').replace(/\bthey're\b/g, 'they are').replace(/\bhe's\b/g, 'he is').replace(/\bshe's\b/g, 'she is').replace(/\baren't\b/g, 'are not').replace(/\bdoesn't\b/g, 'does not').replace(/\bhaven't\b/g, 'have not').replace(/\bhasn't\b/g, 'has not').replace(/\bwasn't\b/g, 'was not').replace(/\bweren't\b/g, 'were not').replace(/\bwe've\b/g, 'we have').replace(/\byou've\b/g, 'you have').replace(/\bthey've\b/g, 'they have').replace(/\byou'll\b/g, 'you will').replace(/\bwe'll\b/g, 'we will').replace(/\bit'll\b/g, 'it will').replace(/\bcouldn't\b/g, 'could not').replace(/\bwouldn't\b/g, 'would not').replace(/\bshouldn't\b/g, 'should not').replace(/\byou'd\b/g, 'you would').replace(/\bwhere's\b/g, 'where is').replace(/\bwho's\b/g, 'who is').replace(/\bhere's\b/g, 'here is')
     .replace(/\bwon't\b/g, 'will not').replace(/\bhow's\b/g, 'how is')
     .replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
 

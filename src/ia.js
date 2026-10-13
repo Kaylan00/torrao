@@ -15,7 +15,7 @@ window.CF = window.CF || {};
   }
 
   // sem emoji em lugar nenhum do app (nem no que a IA escreve)
-  const semEmoji = s => String(s).replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, '').replace(/[ \t]+\n/g, '\n').trim();
+  const semEmoji = s => String(s).replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}\u{20E3}\u{1F3FB}-\u{1F3FF}]/gu, '').replace(/[ \t]+\n/g, '\n').trim();
 
   CF.ia = {
     cfg,

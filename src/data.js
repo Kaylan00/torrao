@@ -48,7 +48,7 @@ CF.DIAS = [
     ia: 'Get to know me. Ask about my life, my work and my hobbies.',
     cartas: [
       ['d2a', 'Diz que você é do Brasil.', ["I'm from Brazil."]],
-      ['d2b', 'Diz que você trabalha com jogos.', ['I work with games.', 'I make games.']],
+      ['d2b', 'Diz que você trabalha com jogos.', ['I work in games.', 'I make games.', 'I work with games.']],
       ['d2c', 'Diz que você joga LoL há 5 anos.', ["I've been playing LoL for 5 years.", "I've been playing League for five years."], 'Pra algo que começou no passado e continua: "I\'ve been ... for ..."'],
       ['d2d', 'Diz que você curte muito games.', ["I'm really into games.", "I'm into games."]],
       ['d2e', 'Diz que você mora com a sua família.', ['I live with my family.']]
