@@ -1,0 +1,16 @@
+# gerado na hora do build
+android/.gradle/
+android/build/
+android/app/build/
+android/app/src/main/assets/www/
+android/local.properties
+# o APK vai como Release no GitHub, não no código
+*.apk
+# arte bruta e imagens de conferência (pesadas; ficam só no PC)
+tools/art_src/
+tools/debug/
+# coisas locais
+.claude/
+__pycache__/
+*.pyc
+src/app.js.antes_casa

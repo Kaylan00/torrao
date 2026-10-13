@@ -1,0 +1,31 @@
+plugins { id 'com.android.application' }
+
+// App = uma WebView com o Torrão dentro (app/src/main/assets/www, copiado por tools/build_apk.py).
+// Por enquanto assinado com a chave de teste (debug): serve pra instalar no celular.
+// Pra Play Store vai precisar de uma chave oficial própria (igual ao Frutas Fujonas).
+android {
+    namespace 'com.temperaguache.torrao'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId "com.temperaguache.torrao"
+        minSdk 24
+        targetSdk 36
+        versionCode((project.findProperty('vCode') ?: '1').toInteger())
+        versionName "1." + (project.findProperty('vCode') ?: '1')
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.debug
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    androidResources {
+        noCompress 'png', 'jpg', 'woff2'
+        ignoreAssetsPattern '!.svn:!.git:.*:!CVS:!thumbs.db:!picasa.ini:!*.scc:*~'
+    }
+}
