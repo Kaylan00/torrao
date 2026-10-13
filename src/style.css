@@ -602,3 +602,14 @@ body.noite .festa .ceu::after, body.noite .revisao .ceu::after { background: tra
 /* aviso de versão nova (no canto do quarto) */
 .hud .versao-nova { margin-right: auto; font-weight: 900; color: var(--tinta); }
 .hud .versao-nova::before { background-color: var(--laranja-claro, #f4a14b); }
+/* o quarto ocupa sempre a largura toda (sem faixas escuras dos lados); o chão de baixo continua na mesma escala */
+.quarto-base { width: min(100%, 600px); }
+.casa-quarto::after { left: 50%; right: auto; width: min(100%, 600px); transform: translateX(-50%); }
+/* tela mais baixinha: o cartão de hoje fica mais fino pra não tapar a janela */
+@media (max-height: 780px) {
+  .casa .hoje { top: 46px; gap: 5px; padding: 9px 10px 10px 12px; }
+  .casa .hoje .energia span { display: none; }
+  .hoje h2 { font-size: 17px; }
+  .meta { padding: 6px 4px; font-size: 13px; }
+  .meta img { width: 19px; height: 19px; }
+}
