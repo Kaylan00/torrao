@@ -4,6 +4,13 @@
   const $app = document.getElementById('app');
   const $conteudo = document.getElementById('conteudo');
   const $camada = document.getElementById('camada');
+  // folha ou tela por cima abrindo: barulhinho de papel deslizando
+  let camadaAberta = false;
+  new MutationObserver(() => {
+    const aberta = !!$camada.innerHTML;
+    if (aberta && !camadaAberta && CF.som) CF.som.folha();
+    camadaAberta = aberta;
+  }).observe($camada, { childList: true });
   const $aviso = document.getElementById('aviso');
 
   const ui = { tela: 'casa', folha: null, vaga: 'quarto', ultimoDia: null, adiantar: false, fala: null, confirmaZerar: false, mostraRestaurar: false };
@@ -38,6 +45,7 @@
   // ---------- utilidades ----------
   let avisoT = null;
   function aviso(msg) {
+    if (/^\+\d/.test(msg) && /laranja/.test(msg)) CF.som.laranja();
     $aviso.textContent = msg;
     $aviso.classList.add('on');
     clearTimeout(avisoT);

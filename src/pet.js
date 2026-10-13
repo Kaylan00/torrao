@@ -17,6 +17,7 @@ window.CF = window.CF || {};
     this.passo = 0;
     this.ocupado = false;
     vivos.add(this);
+    el.style.animationDelay = (-Math.random() * 3.4).toFixed(2) + 's';
     this.loop();
   }
 
@@ -31,6 +32,11 @@ window.CF = window.CF || {};
     this.t = setTimeout(fn, ms);
   };
 
+  // Os quadros 0, 1 e 2 são quase iguais: trocar entre eles dava tremida. Agora ele fica no 0 e o corpo respira
+  // por transformação (CSS .pet), com piscadas, olhadinhas e pulinhos em tempos sorteados.
+  const sorteio = (a, b) => a + Math.random() * (b - a);
+  const anima = (el, quadros, opts) => (el && el.animate ? el.animate(quadros, opts) : null);
+
   Pet.prototype.loop = function () {
     if (!this.el.isConnected) { this.parar(); return; }
     if (this.ocupado) return;
@@ -38,47 +44,82 @@ window.CF = window.CF || {};
       const seq = [12, 13, 12, 14, 12, 15];
       this.quadro(seq[this.passo % seq.length]);
       this.passo++;
-      this.agenda(() => this.loop(), 760);
+      this.agenda(() => this.loop(), 900);
       return;
     }
-    // respirando: 0 1 0 2, com piscada de vez em quando e um pulinho raro
-    const seq = [0, 1, 0, 2];
-    const k = seq[this.passo % seq.length];
-    this.passo++;
-    if (k === 0 && Math.random() < 0.18) {
-      this.quadro(3);
-      this.agenda(() => { this.quadro(0); this.agenda(() => this.loop(), 380); }, 150);
-      return;
-    }
-    if (this.passo % 24 === 0 && Math.random() < 0.5 && this.el.dataset.solto !== '0') { this.pular(true); return; }
-    this.quadro(k);
-    this.agenda(() => this.loop(), 520);
+    this.quadro(0);
+    if (this.passo++ === 0) { this.agenda(() => this.loop(), sorteio(900, 2200)); return; }
+    const r = Math.random(), solto = this.el.dataset.solto !== '0';
+    if (r < 0.5) this.piscar(Math.random() < 0.25);
+    else if (r < 0.72) this.olhar();
+    else if (r < 0.86 && solto) { this.pular(true); return; }
+    else this.balancar();
+    this.agenda(() => this.loop(), sorteio(2200, 4200));
   };
 
+  Pet.prototype.piscar = function (dupla) {
+    this.quadro(3);
+    setTimeout(() => {
+      if (!this.el.isConnected || this.ocupado) return;
+      this.quadro(0);
+      if (dupla) setTimeout(() => { if (this.el.isConnected && !this.ocupado) { this.quadro(3); setTimeout(() => this.el.isConnected && !this.ocupado && this.quadro(0), 110); } }, 140);
+    }, 120);
+  };
+
+  // inclina pra um lado, como quem olha alguma coisa, e volta devagar
+  Pet.prototype.olhar = function () {
+    const lado = Math.random() < 0.5 ? -1 : 1;
+    anima(this.sprite, [
+      { transform: 'rotate(0deg)' },
+      { transform: `rotate(${lado * 5}deg) translateX(${lado * 3}px)`, offset: 0.25, easing: 'ease-in-out' },
+      { transform: `rotate(${lado * 5}deg) translateX(${lado * 3}px)`, offset: 0.7, easing: 'ease-in-out' },
+      { transform: 'rotate(0deg)' }
+    ], { duration: 1500, easing: 'ease-in-out' });
+  };
+
+  // remexidinha de gelatina
+  Pet.prototype.balancar = function () {
+    anima(this.sprite, [
+      { transform: 'scale(1, 1)' },
+      { transform: 'scale(1.07, .93)', offset: 0.2 },
+      { transform: 'scale(.95, 1.05)', offset: 0.45 },
+      { transform: 'scale(1.03, .97)', offset: 0.7 },
+      { transform: 'scale(1, 1)' }
+    ], { duration: 700, easing: 'ease-in-out' });
+  };
+
+  // pulo com mola: agacha, estica subindo, fica um instante no ar, cai acelerando, amassa e volta
   Pet.prototype.pular = function (pequeno) {
     if (!this.el.isConnected) return;
     this.ocupado = true;
-    const alto = pequeno ? 22 : 58;
-    const tempos = [[4, 0], [5, 110], [6, 260], [7, 430], [0, 600]];
-    tempos.forEach(([k, ms]) => setTimeout(() => this.el.isConnected && this.quadro(k), ms));
-    if (this.sprite.animate) {
-      this.sprite.animate([
-        { transform: 'translateY(0) scale(1.06, .9)' },
-        { transform: `translateY(-${alto * .8}px) scale(.95, 1.07)`, offset: .3 },
-        { transform: `translateY(-${alto}px) scale(1, 1)`, offset: .5 },
-        { transform: 'translateY(0) scale(1.07, .9)', offset: .85 },
-        { transform: 'translateY(0) scale(1, 1)' }
-      ], { duration: 680, easing: 'ease-out' });
-    }
-    this.agenda(() => { this.ocupado = false; this.loop(); }, 700);
+    const alto = pequeno ? 18 : 56, dur = pequeno ? 620 : 860;
+    if (!pequeno && CF.som && CF.som.pulo) setTimeout(() => CF.som.pulo(), dur * 0.14);
+    [[4, 0], [5, 0.16], [6, 0.36], [7, 0.58], [4, 0.76], [0, 0.9]].forEach(([k, f]) =>
+      setTimeout(() => this.el.isConnected && this.quadro(k), dur * f));
+    setTimeout(() => this.el.classList.add('no-ar'), dur * 0.16);
+    setTimeout(() => this.el.classList.remove('no-ar'), dur * 0.7);
+    anima(this.sprite, [
+      { transform: 'translateY(0) scale(1, 1)', easing: 'ease-out' },
+      { transform: 'translateY(0) scale(1.13, .86)', offset: 0.14, easing: 'cubic-bezier(.2, .9, .35, 1)' },
+      { transform: `translateY(-${alto}px) scale(.92, 1.1)`, offset: 0.4, easing: 'ease-out' },
+      { transform: `translateY(-${alto * 1.04}px) scale(1, 1)`, offset: 0.5, easing: 'cubic-bezier(.55, 0, .9, .45)' },
+      { transform: 'translateY(0) scale(1.15, .84)', offset: 0.72, easing: 'ease-out' },
+      { transform: 'translateY(0) scale(.95, 1.06)', offset: 0.86, easing: 'ease-in-out' },
+      { transform: 'translateY(0) scale(1, 1)' }
+    ], { duration: dur });
+    this.agenda(() => { this.ocupado = false; this.loop(); }, dur + 60);
   };
 
   Pet.prototype.comer = function () {
     if (!this.el.isConnected) return;
     this.ocupado = true;
-    const seq = [8, 9, 10, 9, 10, 9, 10, 11, 11];
-    seq.forEach((k, i) => setTimeout(() => this.el.isConnected && this.quadro(k), i * 230));
-    this.agenda(() => { this.ocupado = false; this.humor = 'tranquilo'; this.loop(); }, seq.length * 230 + 200);
+    const seq = [8, 9, 10, 9, 10, 9, 10, 11, 11], passo = 200;
+    seq.forEach((k, i) => setTimeout(() => this.el.isConnected && this.quadro(k), i * passo));
+    // a cada mordida o corpo amassa um pouquinho
+    anima(this.sprite, [
+      { transform: 'scale(1, 1)' }, { transform: 'scale(1.05, .95)', offset: 0.5 }, { transform: 'scale(1, 1)' }
+    ], { duration: passo * 2, iterations: 3, easing: 'ease-in-out' });
+    this.agenda(() => { this.ocupado = false; this.humor = 'tranquilo'; this.balancar(); this.loop(); }, seq.length * passo + 200);
   };
 
   Pet.prototype.parar = function () {

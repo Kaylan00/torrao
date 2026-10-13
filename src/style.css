@@ -643,3 +643,14 @@ body { background: #6b4a2c url("../assets/papel.jpg") center / 320px; background
 @media (max-height: 780px) {
   .casa .hoje { top: 8px; }
 }
+
+/* ---------- Torrão vivo: respira e balança de leve o tempo todo (os pulos e olhadas vêm do pet.js) ---------- */
+.pet { transform-origin: 50% 100%; animation: respira 3.4s ease-in-out infinite; }
+@keyframes respira {
+  0%, 100% { transform: scale(1, 1) rotate(0deg); }
+  30% { transform: scale(.982, 1.03) rotate(-.8deg); }
+  62% { transform: scale(1.012, .99) rotate(.5deg); }
+}
+.pet[data-humor="seco"] { animation-duration: 5s; }
+.pet::after { transition: transform .25s ease-out, opacity .25s; }
+.pet.no-ar::after { transform: translateX(-50%) scale(.7); opacity: .6; }
