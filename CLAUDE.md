@@ -57,6 +57,15 @@ O dono achou a v1 genérica e o bicho duro. A v2:
   Peças com `onde`: topo (chapéu), testa (faixa), olhos (óculos), boca (bigode). 21 peças no total.
 - Arte v5: `python tools/gerar_arte5.py` + `python tools/fatiar5.py`; depois `python tools/fatiar3.py` e conferir com `python tools/ver_roupas.py`.
 
+## GitHub e atualização (13/10/2026)
+- Repositório PÚBLICO: https://github.com/Kaylan00/torrao (o dono pediu). Fora do git (.gitignore): builds do Android,
+  `*.apk`, `tools/art_src/` (arte bruta), `tools/debug/`, `.claude/`. A assinatura do APK usa a chave debug do PC (fora do repo):
+  gerar sempre neste PC pra o APK novo instalar por cima do antigo.
+- Publicar versão nova: `python tools/build_apk.py` e depois `python tools/publicar.py "o que mudou"` (commit + push +
+  Release v<versão> com o Torrao.apk). O build grava `src/versao.js` (CF.VERSAO); o app confere a última Release
+  (no máximo a cada 6 h) e mostra "Versão nova!" no quarto com o botão de baixar. Ajustes têm "Conferir se tem versão nova".
+- Commits com autor Kaylan00 <Kaylan00@users.noreply.github.com> (config local do repo).
+
 ## Versão 10 (13/10/2026): simples como o Finch, com cara de estudo e IA grátis
 - O dono achou complexo demais. Agora: 3 metas por dia no quarto (Aprender, Praticar, Falar; dia leve = Revisar;
   chefão = Falar + Resultado; desafio = Praticar + Falar) com a "Energia do Torrão". Ouvir, Anki, EF SET e amigo viraram
