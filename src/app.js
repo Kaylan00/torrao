@@ -327,6 +327,8 @@
     fala: 'Fala: conversa falando com o Torrão todo dia, nem que seja 5 minutos.'
   };
   let tn = null;
+  // códigos de testador (versão da loja): só o SHA-256 de cada um, em maiúsculas e sem espaços
+  const CODIGOS = ['00b5dc36a30629ec4d8ab9c0dacd2d435fb9773f5b6025bd7ed04e0a21b45364'];
 
   function abrirTeste() {
     const T = CF.TESTE_NIVEL, ord = (a, b) => NIVEIS.indexOf(a.n) - NIVEIS.indexOf(b.n);
@@ -982,6 +984,8 @@
             <p class="ia-status">${ia.chave ? 'Chave salva.' : 'Sem chave: o app funciona, só sem a IA.'}</p>
           </div>
           ${vozAjusteHtml()}
+          ${CF.LOJA ? (CF.estado.liberado ? '<p class="ia-status">Código de testador ativo: tudo liberado.</p>'
+            : `<div class="ia-ajuste"><b>Tenho um código</b><input id="codigo" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="código de testador"><button class="botao kraft c3" data-acao="usarCodigo">Usar o código</button></div>`) : ''}
           <button class="botao kraft c1" data-acao="som">${CF.estado.som ? 'Som e vibração: ligados' : 'Som e vibração: desligados'}</button>
           <button class="botao kraft c2" data-acao="backup">Copiar backup do progresso</button>
           ${ui.mostraRestaurar
@@ -1766,6 +1770,17 @@
         CF.usarQuarto(b.dataset.id); CF.som.marca(); render(); abrirFolha('loja'); break;
       }
       case 'laranjas': CF.som.toque(); ui.folha = null; abrirLaranjas(); break;
+      case 'usarCodigo': {
+        // o código não fica escrito no app (o repositório é público): só a impressão digital dele (SHA-256)
+        const el = document.getElementById('codigo'), txt = (el ? el.value : '').toUpperCase().replace(/\s+/g, '');
+        if (!txt) break;
+        crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt)).then(buf => {
+          const h = [...new Uint8Array(buf)].map(x => x.toString(16).padStart(2, '0')).join('');
+          if (CODIGOS.includes(h)) { CF.estado.liberado = true; CF.salvar(); CF.som.festa(); aviso('Código aceito! Tudo liberado.'); render(); }
+          else aviso('Esse código não existe.');
+        }).catch(() => aviso('Não deu pra conferir o código agora.'));
+        break;
+      }
       case 'resultadoIA': {
         const erradas = Object.keys(CF.estado.cartas).filter(id => CF.TODAS_CARTAS[id] && CF.estado.cartas[id].erro)
           .sort((a, b) => CF.estado.cartas[b].erro - CF.estado.cartas[a].erro).slice(0, 12)

@@ -316,7 +316,8 @@ CF.ROUPAS = [
 
 // TUDO LIBERADO na versão dos amigos e no PC (o dono pediu tudo liberado em 12/10/2026).
 // Na versão da Play Store (CF.LOJA), roupas, skins e quartos custam laranjas (CF.precoRoupa etc. no logic.js).
-CF.TUDO_LIBERADO = !CF.LOJA;
+// ...ou quando a pessoa usou um código de testador (Progresso > Ajustes > Tenho um código).
+Object.defineProperty(CF, 'TUDO_LIBERADO', { get: () => !CF.LOJA || !!(CF.estado && CF.estado.liberado), configurable: true });
 
 // Cartões do passeio: completou o dia, no dia seguinte o Torrão volta com uma dessas (e 3 laranjas)
 CF.CARTOES = [
