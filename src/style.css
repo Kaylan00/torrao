@@ -758,6 +758,11 @@ body { background: #6b4a2c url("../assets/papel.jpg") center / 320px; background
 .teste-erro p { margin: 2px 0 0; font-size: 14px; }
 
 /* ---------- laranjas: pacotes e vídeo ---------- */
+.completo { display: grid; gap: 6px; padding: 14px 16px; text-align: left; }
+.completo b { font-family: var(--f-titulo); font-size: 20px; }
+.completo p { margin: 0; font-weight: 600; font-size: 14px; }
+.completo .botao { justify-self: start; pointer-events: none; }
+.completo.papel::before { background-color: #ffe7c2; }
 .ganhos-lista { display: grid; gap: 6px; }
 .ganhos-lista h3 { font-size: 18px; }
 .ganhos-lista p { margin: 0; font-weight: 600; }

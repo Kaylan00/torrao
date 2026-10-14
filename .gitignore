@@ -15,3 +15,5 @@ tools/debug/
 __pycache__/
 *.pyc
 src/app.js.antes_casa
+# prints e imagens da Play Store (gerados por tools/loja_prints.py)
+loja/

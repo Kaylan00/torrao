@@ -10,17 +10,20 @@
 - **amigos** (GitHub, `Torrao.apk`):
   - Assinada com a chave de teste, pra quem já tem o app instalado conseguir atualizar por cima.
   - Tudo liberado, com o plano pessoal e o aviso "Versão nova!".
+- **Código de testador** (só na loja): em Progresso > Ajustes > Tenho um código, `testador2026` libera tudo. O app guarda só o SHA-256 do código (`CODIGOS` no `src/app.js`). Serve pros amigos e pro revisor do Google. Pra criar outro código: SHA-256 dele em maiúsculas e sem espaços.
 - **Testar a loja no PC:** abrir `http://localhost:8620/?loja=1&mudo=1`.
 
 ## Pacotes de laranja (criar no Play Console > Monetizar > Produtos no app)
 
 | ID | Laranjas | Preço sugerido |
 |---|---|---|
-| laranjas_60 | 60 | R$ 4,90 |
-| laranjas_150 | 150 | R$ 9,90 |
-| laranjas_400 | 400 | R$ 19,90 |
+| laranjas_120 | 120 | R$ 4,90 |
+| laranjas_280 | 280 | R$ 9,90 |
+| torrao_completo | tudo liberado + 300 de bônus | R$ 19,90 |
 
-Os três são consumíveis: o app soma as laranjas e consome a compra. Os IDs precisam ser exatamente esses.
+Os pacotes de laranja são consumíveis: o app soma as laranjas e consome a compra.
+O `torrao_completo` é compra única (não consumível): libera tudo que existe hoje e dá 300 laranjas pras novidades. O app só confirma a compra, sem consumir, e ela volta sozinha se a pessoa trocar de celular.
+Os IDs precisam ser exatamente esses.
 
 ## Falta fazer
 

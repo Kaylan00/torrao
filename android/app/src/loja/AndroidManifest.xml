@@ -1,7 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Só na versão da Play Store: identificação do app no AdMob (vídeo premiado). -->
+<!-- Só na versão da Play Store. (Quando tiver AdMob: meta-data com.google.android.gms.ads.APPLICATION_ID aqui.) -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application>
-        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="${admobApp}"/>
-    </application>
 </manifest>

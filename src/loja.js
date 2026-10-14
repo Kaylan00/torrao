@@ -1,16 +1,18 @@
 // Laranjas compradas (pacotes do Google Play) e vídeo premiado (AdMob). Só funciona na versão da Play Store,
 // onde o Android liga as pontes window.Loja e window.Anuncio (android/app/src/loja).
 // Pacotes são consumíveis: o app soma as laranjas, guarda o código da compra (nunca soma duas vezes) e manda consumir.
+// "Torrão Completo" é compra única: libera tudo que existe hoje (roupas, skins, quartos, móveis) e dá laranjas de bônus
+// pras novidades. O Google guarda essa compra: trocou de celular, ela volta sozinha.
 window.CF = window.CF || {};
 
 (function () {
   const L = () => window.Loja, A = () => window.Anuncio;
   // preço padrão (antes de a Play responder); o de verdade vem da Play já na moeda de cada país
   CF.PACOTES = [
-    { id: 'laranjas_60', qtd: 60, padrao: 'R$ 4,90' },
-    { id: 'laranjas_150', qtd: 150, padrao: 'R$ 9,90', selo: 'Mais laranjas por real' },
-    { id: 'laranjas_400', qtd: 400, padrao: 'R$ 19,90', selo: 'O melhor preço' }
+    { id: 'laranjas_120', qtd: 120, padrao: 'R$ 4,90' },
+    { id: 'laranjas_280', qtd: 280, padrao: 'R$ 9,90', selo: 'Mais laranjas por real' }
   ];
+  CF.COMPLETO = { id: 'torrao_completo', bonus: 300, padrao: 'R$ 19,90' };
   const precos = {};
   const avisa = (ev, x) => { if (CF.loja.aoMudar) CF.loja.aoMudar(ev, x); };
 
@@ -19,9 +21,9 @@ window.CF = window.CF || {};
     aoMudar: null,                                  // o app liga isso (aviso + redesenhar)
     temCompra: () => !!L(),
     temVideo: () => !!A(),
-    preco: id => precos[id] || (CF.PACOTES.find(p => p.id === id) || {}).padrao || '',
+    preco: id => precos[id] || (id === CF.COMPLETO.id ? CF.COMPLETO.padrao : (CF.PACOTES.find(p => p.id === id) || {}).padrao) || '',
     iniciar() {
-      try { if (L()) L().iniciar(CF.PACOTES.map(p => p.id).join(',')); } catch (e) { /* sem loja */ }
+      try { if (L()) L().iniciar(CF.PACOTES.map(p => p.id).concat(CF.COMPLETO.id).join(',')); } catch (e) { /* sem loja */ }
       try { if (A()) A().preparar(); } catch (e) { /* sem anúncio */ }
     },
     comprar(id) { try { if (L()) L().comprar(id); } catch (e) { avisa('cancelou'); } },
@@ -34,6 +36,14 @@ window.CF = window.CF || {};
 
   window.CF_lojaPrecos = j => { Object.assign(precos, j || {}); avisa('precos'); };
   window.CF_lojaCompra = c => {
+    if (c && c.id === CF.COMPLETO.id && c.token) {
+      const ts = (CF.estado.tokens = CF.estado.tokens || []);
+      const novo = !ts.includes(c.token);
+      CF.liberarTudo(novo ? CF.COMPLETO.bonus : 0);
+      if (novo) { ts.push(c.token); CF.salvar(); avisa('completo'); }
+      try { L().confirmar(c.token); } catch (e) { /* confirma na próxima abertura */ }
+      return;
+    }
     const p = c && CF.PACOTES.find(x => x.id === c.id);
     if (!p || !c.token) return;
     const ts = (CF.estado.tokens = CF.estado.tokens || []);

@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 
+import com.android.billingclient.api.AcknowledgePurchaseParams;
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClientStateListener;
 import com.android.billingclient.api.BillingFlowParams;
@@ -26,6 +27,7 @@ import java.util.Map;
 //   iniciar("laranjas_100,laranjas_300,...")  conecta, manda os preços (já na moeda do país) e entrega compras que ficaram pra trás
 //   comprar(id)                               abre a tela de pagamento do Google
 //   consumir(token)                           o app já guardou as laranjas: "gasta" a compra pra poder comprar de novo
+//   confirmar(token)                          compra única (Torrão Completo): confirma pro Google sem gastar (sem isso, ele devolve o dinheiro em 3 dias)
 // Respostas pro app: CF_lojaPrecos(json), CF_lojaCompra({id, token}), CF_lojaFim(ok).
 // Os pacotes são CONSUMÍVEIS: o app entrega as laranjas e depois consome. Se fechar no meio, entrega na próxima abertura
 // (o app guarda os tokens já entregues, então nunca entrega duas vezes).
@@ -111,6 +113,14 @@ public class Loja {
             l.add(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(d).build());
             BillingResult r = cli.launchBillingFlow(act, BillingFlowParams.newBuilder().setProductDetailsParamsList(l).build());
             if (r.getResponseCode() != BillingClient.BillingResponseCode.OK) js("window.CF_lojaFim && CF_lojaFim(false)");
+        });
+    }
+
+    @JavascriptInterface
+    public void confirmar(String token) {
+        act.runOnUiThread(() -> {
+            if (cli == null || !cli.isReady() || token == null) return;
+            cli.acknowledgePurchase(AcknowledgePurchaseParams.newBuilder().setPurchaseToken(token).build(), r -> { });
         });
     }
 

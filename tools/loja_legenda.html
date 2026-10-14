@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<!-- Monta um print da Play Store (1080x1920) com legenda em cima, ou o banner (1024x500). Usado por tools/loja_prints.py. -->
+<style>
+  @font-face { font-family: "Fraunces"; src: url("../assets/fonts/fraunces-latin.woff2") format("woff2"); font-weight: 100 900; }
+  @font-face { font-family: "Fraunces"; src: url("../assets/fonts/fraunces-latinext.woff2") format("woff2"); font-weight: 100 900; unicode-range: U+0100-024F; }
+  @font-face { font-family: "Manrope"; src: url("../assets/fonts/manrope-latin.woff2") format("woff2"); font-weight: 200 800; }
+  @font-face { font-family: "Manrope"; src: url("../assets/fonts/manrope-latinext.woff2") format("woff2"); font-weight: 200 800; unicode-range: U+0100-024F; }
+  html, body { margin: 0; overflow: hidden; }
+  body { color: #3a2617; background: repeating-linear-gradient(90deg, #e3ebbd 0 90px, #fbf5e4 90px 180px); }
+  .print { width: 1080px; height: 1920px; display: flex; flex-direction: column; align-items: center; }
+  .print header { margin: 110px 70px 60px; text-align: center; }
+  .print h1 { margin: 0; font: 800 92px/1.02 "Fraunces", serif; letter-spacing: -1px; }
+  .print p { margin: 22px 0 0; font: 700 42px/1.25 "Manrope", sans-serif; color: #5a3b22; }
+  .tela { width: 820px; height: 1458px; border-radius: 46px; overflow: hidden; border: 14px solid #3a2617; box-shadow: 0 28px 0 rgba(58, 38, 23, .18); background: #fff; }
+  .tela img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+  .banner { width: 1024px; height: 500px; display: flex; align-items: center; gap: 30px; padding: 0 70px; box-sizing: border-box;
+    background: repeating-linear-gradient(90deg, #e3ebbd 0 64px, #fbf5e4 64px 128px); }
+  .banner img { height: 380px; }
+  .banner h1 { margin: 0; font: 800 120px/1 "Fraunces", serif; letter-spacing: -2px; }
+  .banner p { margin: 16px 0 0; font: 700 40px/1.2 "Manrope", sans-serif; color: #5a3b22; max-width: 560px; }
+</style>
+</head>
+<body>
+<div id="raiz"></div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const esc = s => String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const raiz = document.getElementById('raiz');
+  if (q.get('banner')) {
+    raiz.innerHTML = `<div class="banner"><img src="../assets/pet/1-tranquilo.png" alt="">
+      <div><h1>Torrão</h1><p>Aprenda inglês um pouquinho por dia</p></div></div>`;
+  } else {
+    raiz.innerHTML = `<div class="print"><header><h1>${esc(q.get('t'))}</h1><p>${esc(q.get('s'))}</p></header>
+      <div class="tela"><img src="${esc(q.get('img'))}" alt=""></div></div>`;
+  }
+</script>
+</body>
+</html>

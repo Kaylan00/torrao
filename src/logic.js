@@ -324,6 +324,18 @@ window.CF = window.CF || {};
   CF.comprarQuarto = id => { const q = CF.QUARTOS.find(x => x.id === id); return q ? comprarCom('quartosTem', id, CF.precoQuarto(q)) : 'ja'; };
   CF.quartoAtual = () => CF.QUARTOS.find(q => q.id === CF.toca().quarto && CF.quartoLiberado(q.id)) || CF.QUARTOS[0];
   CF.usarQuarto = function (id) { if (!CF.quartoLiberado(id)) return false; CF.toca().quarto = id; CF.salvar(); return true; };
+  // Torrão Completo: tudo que existe hoje fica seu (as novidades depois custam laranjas; o bônus serve pra elas)
+  CF.liberarTudo = function (bonus) {
+    const add = (lista, ids) => { const l = (CF.estado[lista] = CF.estado[lista] || []); ids.forEach(id => { if (!l.includes(id)) l.push(id); }); };
+    add('roupasTem', CF.ROUPAS.map(x => x.id));
+    add('skinsTem', CF.SKINS.map(x => x.id));
+    add('quartosTem', CF.QUARTOS.map(x => x.id));
+    const t = CF.toca();
+    CF.MOVEIS.forEach(m => { if (!t.tem.includes(m.id)) t.tem.push(m.id); });
+    CF.estado.completo = true;
+    CF.estado.frutas += bonus || 0;
+    CF.salvar();
+  };
   CF.comprarMovel = function (id) {
     const m = CF.MOVEIS.find(x => x.id === id), t = CF.toca();
     if (!m || t.tem.includes(id) || CF.estado.frutas < m.preco) return false;

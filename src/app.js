@@ -748,6 +748,12 @@
   function abrirLaranjas() {
     const antiga = $camada.querySelector('[aria-label="Laranjas"]'), y = antiga ? antiga.scrollTop : 0;
     const vh = CF.loja.videosHoje(), restam = CF.loja.VIDEOS_DIA - vh, pronto = CF.loja.videoPronto();
+    const completo = CF.estado.completo
+      ? `<div class="completo papel r1"><b>Você tem o Torrão Completo</b><p>Tudo liberado. Obrigado por apoiar o Torrão!</p></div>`
+      : `<button class="completo papel r1" data-acao="comprarPacote" data-id="${CF.COMPLETO.id}">
+          <b>Torrão Completo</b>
+          <p>Todas as roupas, skins, quartos e móveis liberados, e mais ${CF.COMPLETO.bonus} laranjas pras novidades que chegarem.</p>
+          <span class="botao laranja c2">${esc(CF.loja.preco(CF.COMPLETO.id))} · pagamento único</span></button>`;
     const pacotes = CF.PACOTES.map((p, i) => `<button class="pacote papel r${i + 2}" data-acao="comprarPacote" data-id="${p.id}">
         <img src="${PLANTA('fruta')}" alt=""><b>${p.qtd} laranjas</b>${p.selo ? `<small>${esc(p.selo)}</small>` : ''}<span class="botao mini laranja c2">${esc(CF.loja.preco(p.id))}</span></button>`).join('');
     $camada.innerHTML = `<div class="escuro" data-acao="fecharFora"><div class="folha papel" role="dialog" aria-label="Laranjas">
@@ -760,10 +766,11 @@
         <p><b>até +3</b> falando inglês</p>
         <p><b>+3</b> na surpresa do dia seguinte, quando completa o dia</p>
       </div>
-      ${CF.LOJA ? `<div class="ganhos-lista"><h3>Vídeo</h3>
+      ${CF.LOJA ? `${CF.loja.temVideo() ? `<div class="ganhos-lista"><h3>Vídeo</h3>
         <button class="botao azul cheio c1" data-acao="verVideo" ${restam > 0 && pronto ? '' : 'disabled'}>${restam <= 0 ? 'Volta amanhã pra mais vídeos' : pronto ? `Ver um vídeo: +${CF.loja.PREMIO_VIDEO} laranjas` : 'Carregando um vídeo...'}</button>
-        <small class="ia-status">${restam > 0 ? `${restam} de ${CF.loja.VIDEOS_DIA} vídeos hoje.` : ''} O vídeo só aparece quando você escolhe.</small></div>
-      <div class="ganhos-lista"><h3>Pacotes</h3><div class="pacotes">${pacotes}</div>
+        <small class="ia-status">${restam > 0 ? `${restam} de ${CF.loja.VIDEOS_DIA} vídeos hoje.` : ''} O vídeo só aparece quando você escolhe.</small></div>` : ''}
+      <div class="ganhos-lista"><h3>Tudo de uma vez</h3>${completo}</div>
+      <div class="ganhos-lista"><h3>Pacotes de laranja</h3><div class="pacotes">${pacotes}</div>
         <small class="ia-status">Pagamento pelo Google Play. As laranjas entram na hora.</small></div>`
       : `<p class="ia-status">Pacotes de laranja e vídeos só na versão da Play Store.</p>`}
     </div></div>`;
@@ -774,12 +781,13 @@
   // a loja (pacotes e vídeo) avisa quando algo muda
   CF.loja.aoMudar = (ev, p) => {
     if (ev === 'compra') { CF.som.festa(); aviso(`+${p.qtd} laranjas! Valeu por apoiar o Torrão.`); }
+    else if (ev === 'completo') { CF.som.festa(); aviso('Torrão Completo! Tudo liberado. Valeu demais!'); }
     else if (ev === 'cancelou') aviso('A compra não foi concluída.');
     else if (ev === 'video-ganhou') { CF.som.laranja(); aviso(`+${CF.loja.PREMIO_VIDEO} laranjas!`); }
     else if (ev === 'video-fechou') aviso('Assiste o vídeo até o fim pra ganhar as laranjas.');
     else if (ev === 'video-falhou') aviso('Sem vídeo agora. Tenta de novo daqui a pouco.');
-    if ($camada.querySelector('[aria-label="Laranjas"]')) { if (ev === 'compra' || ev === 'video-ganhou') render(); abrirLaranjas(); }
-    else if (ev === 'compra' || ev === 'video-ganhou') { if (!$camada.innerHTML) render(); else if (ui.folha) { render(); abrirFolha(ui.folha); } }
+    if ($camada.querySelector('[aria-label="Laranjas"]')) { if (ev === 'compra' || ev === 'completo' || ev === 'video-ganhou') render(); abrirLaranjas(); }
+    else if (ev === 'compra' || ev === 'completo' || ev === 'video-ganhou') { if (!$camada.innerHTML) render(); else if (ui.folha) { render(); abrirFolha(ui.folha); } }
   };
 
   function abrirFolha(qual) {

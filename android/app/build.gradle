@@ -72,6 +72,5 @@ android {
 dependencies {
     // só a versão da loja usa (o código só liga quando BuildConfig.LOJA)
     lojaImplementation 'com.android.billingclient:billing:8.3.0'
-    lojaImplementation 'com.google.android.gms:play-services-ads:24.9.0'
-    lojaImplementation 'com.google.android.ump:user-messaging-platform:3.2.0'
+    // vídeo premiado (quando tiver conta no AdMob): play-services-ads 24.9.0 + user-messaging-platform 3.2.0, e o Anuncio.java de tools/futuro
 }
