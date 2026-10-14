@@ -292,6 +292,7 @@
         ${ultimo ? `<button class="botao grande laranja c2" data-acao="introFim">Bora!</button>`
           : `<button class="botao grande laranja c2" data-acao="introProx" data-i="${i + 1}">Próximo</button><button class="link" data-acao="introPular">Pular</button>`}
       </div></div>`;
+    if (i > 0) { const f = $camada.querySelector('.festa'); if (f) f.style.animation = 'none'; }
     CF.montarPets($camada);
   }
 
@@ -573,11 +574,10 @@
         </section>
         <section class="papel creme2 r4 ajustes" id="ajustes">
           <h2 style="font-size:20px">Ajustes</h2>
-          <div class="ia-ajuste"><b>IA grátis (OpenRouter)</b>
-            <p>Corrige o que você escreve e conversa com você em inglês. A chave fica só neste aparelho.</p>
-            <input id="iaChave" type="password" autocomplete="off" placeholder="cola aqui sua chave (sk-or-...)" value="${esc(ia.chave || '')}">
-            <input id="iaModelo" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="modelo (vazio = openrouter/free)" value="${esc(ia.modelo || '')}">
-            <div class="linha-botoes"><button class="botao verde c2" data-acao="iaSalvar">Salvar</button><button class="botao kraft c3" data-acao="iaTestar">Testar a IA</button></div>
+          <div class="ia-ajuste"><b>Chave da IA</b>
+            <p>Cola uma vez e pronto: a IA corrige, tira dúvidas e conversa com você. Fica salva só neste celular.</p>
+            <input id="iaChave" type="password" autocomplete="off" placeholder="cola a chave aqui (sk-or-...)" value="${esc(ia.chave || '')}">
+            <button class="botao verde c2" data-acao="iaSalvar">Salvar</button>
             <p class="ia-status">${ia.chave ? 'Chave salva.' : 'Sem chave: o app funciona, só sem a IA.'}</p>
           </div>
           ${vozAjusteHtml()}
@@ -949,7 +949,7 @@
             <button class="mic ${chat.estado}" data-acao="micToque" aria-label="Microfone"><img src="${IC('mic')}" alt=""></button>
             <button class="link" data-acao="chatModo">Prefiro escrever</button></div>`
         : `<div class="chat-escrever">${conversa && CF.voz.podeOuvir() ? `<button class="mic-mini" data-acao="chatModo" aria-label="Conversar falando"><img src="${IC('mic')}" alt=""></button>` : ''}<input id="chatInput" type="text" autocomplete="off" enterkeyhint="send" placeholder="${conversa ? 'Escreve em inglês...' : 'Escreve sua dúvida...'}" value="${esc(chat.rascunho)}"><button class="botao laranja c2" data-acao="chatEnviar" ${chat.esperando ? 'disabled' : ''}>Enviar</button></div>`}`
-      : `<div class="papel r3 chat-sem"><span class="fita"></span><h2>Falta a chave da IA</h2><p>Pra conversar com o Torrão, cola sua chave da OpenRouter nos Ajustes (aba Progresso). É grátis.</p><button class="botao laranja c2" data-acao="irAjustes">Ir pros Ajustes</button></div>`}
+      : `<div class="papel r3 chat-sem"><span class="fita"></span><h2>Falta a chave da IA</h2><p>Pra conversar com o Torrão, cola a chave da IA nos Ajustes (aba Progresso). Só precisa fazer uma vez.</p><button class="botao laranja c2" data-acao="irAjustes">Ir pros Ajustes</button></div>`}
     </div>`;
     const lista = $camada.querySelector('.chat-msgs');
     if (lista) lista.scrollTop = lista.scrollHeight;
@@ -1232,16 +1232,16 @@
       case 'discordo': if (rev) { rev.ia = null; renderRev(); } break;
       case 'irAjustes': chat = null; apr = null; $camada.innerHTML = ''; ui.tela = 'progresso'; render(); setTimeout(() => { const a = document.getElementById('ajustes'); if (a) a.scrollIntoView({ behavior: 'smooth' }); }, 60); break;
       case 'iaSalvar': {
-        const c = document.getElementById('iaChave'), m = document.getElementById('iaModelo');
-        CF.ia.salvar({ chave: c ? c.value.trim() : '', modelo: m ? m.value.trim() : '' });
-        aviso(c && c.value.trim() ? 'Chave salva! Toca em "Testar a IA".' : 'Chave apagada.'); render(); break;
-      }
-      case 'iaTestar':
-        if (!CF.ia.pronta()) { aviso('Cola a chave e toca em Salvar primeiro.'); break; }
-        aviso('Testando a IA...');
+        // salvou: já testa sozinho
+        const c = document.getElementById('iaChave'), chave = c ? c.value.trim() : '';
+        CF.ia.salvar({ chave });
+        render();
+        if (!chave) { aviso('Chave apagada.'); break; }
+        aviso('Chave salva! Testando a IA...');
         CF.ia.pedir([{ role: 'user', content: 'Say hi to me in one short sentence.' }], { max: 40, temp: 0.3 })
-          .then(t => aviso('A IA respondeu: ' + t.slice(0, 80))).catch(e => aviso(e.message));
+          .then(() => aviso('Pronto! A IA está funcionando.')).catch(e => aviso(e.message));
         break;
+      }
       case 'regarDia': {
         const n = Number(b.dataset.n);
         iniciarRevisao(CF.paraRegar(), 'regar', () => { CF.registro(n).regar = true; CF.ganharPasso(n, 'regar'); CF.marcarAtividade(); CF.salvar(); });
