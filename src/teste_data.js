@@ -37,6 +37,8 @@ CF.TESTE_NIVEL = {
     { n: 'B1', p: 'If it ___ tomorrow, we will cancel the picnic.', op: ['rains', 'will rain', 'would rain', 'rained'], c: 0 },
     { n: 'B1', p: 'You ___ wear a seatbelt in the car. It\'s the law.', op: ['might', 'would', 'could', 'must'], c: 3 },
     { n: 'B1', p: 'That\'s the man ___ dog bit my son.', op: ['who', 'which', 'whose', 'that'], c: 2 },
+    { n: 'B1', p: 'If I ___ more money, I would travel around the world.', op: ['have', 'had', 'would have', 'will have'], c: 1 },
+    { n: 'B1', p: 'When I was a kid, I ___ play soccer in the street every day.', op: ['use to', 'was used to', 'used to', 'am used to'], c: 2 },
 
     { n: 'B2', p: 'If I ___ about the traffic, I would have left earlier.', op: ['knew', 'had known', 'have known', 'would know'], c: 1 },
     { n: 'B2', p: 'This bridge ___ in 1974.', op: ['was built', 'built', 'has built', 'was building'], c: 0 },
@@ -90,7 +92,7 @@ CF.TESTE_NIVEL = {
 
     { n: 'B1', audio: 'Hi, this is Doctor Lima\'s office calling about your appointment on Thursday afternoon. Unfortunately, the doctor has to travel that day, so we need to move it to Friday morning. Please call us back to confirm.', p: 'Para quando a consulta foi remarcada?', op: ['Quinta de manhã', 'Quinta à tarde', 'Sexta de manhã', 'Sexta à tarde'], c: 2 },
     { n: 'B1', audio: 'Attention, passengers on flight 482 to Miami. Your departure gate has changed from gate 12 to gate 21. Boarding will now begin at ten fifteen, twenty minutes later than scheduled.', p: 'Qual é o novo portão de embarque?', op: ['Portão 21', 'Portão 12', 'Portão 20', 'Portão 15'], c: 0 },
-    { n: 'B1', audio: 'I used to take the bus to work every day, but now I work from home three days a week. On the other two days, I usually ride my bike.', p: 'Hoje em dia, como ela vai ao trabalho nos dias presenciais?', op: ['De ônibus', 'De carro', 'A pé', 'De bicicleta'], c: 3 },
+    { n: 'B1', audio: 'I used to take the bus to work every day, but now I work from home three days a week. On the other two days, I usually ride my bike.', p: 'Hoje em dia, como essa pessoa vai ao trabalho nos dias em que não fica em casa?', op: ['De ônibus', 'De carro', 'A pé', 'De bicicleta'], c: 3 },
 
     { n: 'B2', audio: 'I was supposed to give the presentation today, but my boss decided to put it off until next week. Honestly, it\'s a weight off my shoulders, because I wasn\'t nearly as prepared as I wanted to be. Now I\'ve got a few more days to get my act together.', p: 'Como a pessoa se sente sobre o adiamento?', op: ['Irritada, porque já estava pronta', 'Aliviada, porque não estava bem preparada', 'Preocupada, porque o chefe ficou bravo', 'Indiferente, porque a apresentação foi cancelada'], c: 1 },
     { n: 'B2', audio: 'Our team was supposed to launch the new website on Monday, but we hit a snag with the payment system. We\'re not back to square one, but it\'ll probably take another week to iron out the problems. In the meantime, the old site will stay up.', p: 'Qual é a situação do projeto?', op: ['Foi cancelado e vai recomeçar do zero', 'Foi lançado na segunda-feira', 'Está atrasado cerca de uma semana por causa de um problema', 'O site antigo foi desligado'], c: 2 },
@@ -107,6 +109,6 @@ CF.TESTE_NIVEL = {
   fala: [
     { n: 'A2', tarefa: 'Apresente-se em inglês: seu nome, de onde você é, seu trabalho ou estudo e o que gosta de fazer no tempo livre.', dica: 'Frases simples: My name is..., I work as..., In my free time I like...' },
     { n: 'B1', tarefa: 'Conte em inglês sobre uma viagem ou experiência marcante do seu passado.', dica: 'Diga onde e quando foi, o que aconteceu e como você se sentiu. Use o passado (went, saw, was).' },
-    { n: 'B2', tarefa: 'Compare morar numa cidade grande e morar no campo. Escolha uma opção e defenda sua escolha.', dica: 'Fale de vantagens e desvantagens das duas, diga sua preferência e justifique com exemplos. Use conectivos como however e on the other hand.' }
+    { n: 'B2', tarefa: 'Compare em inglês morar numa cidade grande e morar no campo. Escolha uma opção e defenda sua escolha.', dica: 'Fale de vantagens e desvantagens das duas, diga sua preferência e justifique com exemplos. Use conectivos como however e on the other hand.' }
   ]
 };

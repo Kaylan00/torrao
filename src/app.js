@@ -341,12 +341,14 @@
 
   function nivelParte(itens) {
     // o nível da parte é o mais alto que a pessoa acerta (60% ou mais) sem ter falhado num nível abaixo
-    let nivel = 0;
+    // (nível com 1 questão só conta se o nível de baixo foi todo certo: assim um chute não sobe o resultado)
+    let nivel = 0, antes = 1;
     for (let k = 0; k < 5; k++) {
       const qs = itens.filter(q => q.n === NIVEIS[k]);
       if (!qs.length) continue;
       const ok = qs.filter(q => q.certo).length / qs.length;
-      if (ok >= 0.6) nivel = k; else break;
+      if (ok >= 0.6 && (qs.length > 1 || antes === 1)) nivel = k; else break;
+      antes = ok;
     }
     return nivel;
   }
@@ -359,7 +361,7 @@
 
   function renderTeste() {
     if (!tn) return;
-    const total = tn.itens.length + 2;
+    const total = tn.itens.length + (CF.ia.pronta() ? (CF.voz.podeGravar() ? 2 : 1) : 0);
     let feitas = tn.fase === 'q' ? tn.pos : tn.fase === 'intro' ? 0 : tn.fase === 'escrita' ? tn.itens.length : tn.fase === 'fala' ? tn.itens.length + 1 : total;
     let corpo = '';
     if (tn.fase === 'intro') {
@@ -500,13 +502,18 @@
     const esc2 = tn.escrita && tn.escrita.res, fal = tn.fala && tn.fala.res;
     if (esc2 && valido(esc2.nivel)) skills.escrita = valido(esc2.nivel);
     if (fal && valido(fal.nivel)) skills.fala = valido(fal.nivel);
-    const idx = Object.values(skills).map(n => NIVEIS.indexOf(n));
-    // nível geral: a média das partes, puxando pra baixo (um nível só conta quando está firme)
-    const geral = NIVEIS[Math.max(0, Math.floor(idx.reduce((a, b) => a + b, 0) / idx.length + 0.25))];
+    // nível geral: a média das partes, puxando pra baixo (um nível só conta quando está firme).
+    // Parte que já bateu no teto do que ela mede (a leitura vai até B2) não derruba quem está acima disso.
+    const teto = s => Math.max(...tn.itens.filter(q => q.sec === s).map(q => NIVEIS.indexOf(q.n)));
+    let idx = Object.keys(skills).map(s => ({ s, v: NIVEIS.indexOf(skills[s]), noTeto: obj[s] != null && obj[s] === teto(s) }));
+    const mediaOutras = x => { const o = idx.filter(y => y !== x); return o.length ? o.reduce((a, y) => a + y.v, 0) / o.length : x.v; };
+    idx = idx.filter(x => !(x.noTeto && x.v < mediaOutras(x))).map(x => x.v);
+    const media = idx.reduce((a, b) => a + b, 0) / idx.length, base = Math.max(0, Math.floor(media + 0.1));
+    const geral = NIVEIS[base], quase = media - base >= 0.5 && NIVEIS[base + 1] ? NIVEIS[base + 1] : '';
     const erros = tn.itens.filter(q => !q.certo).map(q => ({ parte: PARTES[q.sec], n: q.n, p: q.sec === 'escuta' ? `${q.p} (áudio: "${q.audio}")` : q.p, certa: q.op[q.c], sua: q.op[q.escolha] }));
     const acertos = tn.itens.filter(q => q.certo).length;
     const res = {
-      data: CF.hoje(), geral, skills, acertos, total: tn.itens.length, erros,
+      data: CF.hoje(), geral, quase, skills, acertos, total: tn.itens.length, erros,
       escrita: esc2 ? { nivel: skills.escrita, comentario: esc2.comentario || '', correcao: esc2.correcao || '', texto: tn.escrita.texto } : (tn.escrita && tn.escrita.erro ? { erro: tn.escrita.erro } : null),
       fala: fal ? { nivel: skills.fala, comentario: fal.comentario || '', transcricao: fal.transcricao || '' } : (tn.fala && tn.fala.erro ? { erro: tn.fala.erro } : null)
     };
@@ -530,6 +537,7 @@
       <div class="bilhete-rev papel r2"><span class="fita"></span>
         <div class="rev-dica">SEU NÍVEL DE INGLÊS</div>
         <div class="nivel-grande">${r.geral}</div>
+        ${r.quase ? `<p class="apr-txt" style="margin-top:-4px"><b>Quase ${r.quase}</b>: várias partes já estão no ${r.quase}.</p>` : ''}
         <p class="apr-txt">${esc(NIVEL_TXT[r.geral] || '')}</p>
         ${antes ? `<p class="apr-txt" style="font-size:13px">No teste anterior (${antes.data.split('-').reverse().join('/')}): ${antes.geral}</p>` : ''}
         <p class="apr-txt" style="font-size:13px">Acertou ${r.acertos} de ${r.total} na múltipla escolha.${falta.length ? ` Sem ${falta.map(s => PARTES[s].toLowerCase()).join(' e ')}: o nível geral pode estar impreciso.` : ''}</p>
