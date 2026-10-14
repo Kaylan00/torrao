@@ -6,6 +6,7 @@ android/app/src/main/assets/www/
 android/local.properties
 # o APK vai como Release no GitHub, não no código
 *.apk
+*.aab
 # arte bruta e imagens de conferência (pesadas; ficam só no PC)
 tools/art_src/
 tools/debug/

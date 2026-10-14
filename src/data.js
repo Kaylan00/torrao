@@ -314,9 +314,9 @@ CF.ROUPAS = [
   { id: 'laranja', nome: 'Chapéu de laranja', lugar: 'cabeca', pts: 1000 }
 ];
 
-// TUDO LIBERADO: o dono usa o app sozinho e pediu todas as skins e roupas liberadas (12/10/2026).
-// Se um dia o app for lançado pra outras pessoas, é só trocar pra false: aí as peças voltam a liberar por pontos.
-CF.TUDO_LIBERADO = true;
+// TUDO LIBERADO na versão dos amigos e no PC (o dono pediu tudo liberado em 12/10/2026).
+// Na versão da Play Store (CF.LOJA), roupas, skins e quartos custam laranjas (CF.precoRoupa etc. no logic.js).
+CF.TUDO_LIBERADO = !CF.LOJA;
 
 // Cartões do passeio: completou o dia, no dia seguinte o Torrão volta com uma dessas (e 3 laranjas)
 CF.CARTOES = [

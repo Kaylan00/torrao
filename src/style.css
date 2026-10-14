@@ -756,3 +756,17 @@ body { background: #6b4a2c url("../assets/papel.jpg") center / 320px; background
 .teste-erro { padding: 8px 0; border-top: 1px dashed rgba(58, 38, 23, .2); }
 .teste-erro small { color: var(--tinta-2); font-weight: 800; }
 .teste-erro p { margin: 2px 0 0; font-size: 14px; }
+
+/* ---------- laranjas: pacotes e vídeo ---------- */
+.ganhos-lista { display: grid; gap: 6px; }
+.ganhos-lista h3 { font-size: 18px; }
+.ganhos-lista p { margin: 0; font-weight: 600; }
+.ganhos-lista p b { display: inline-block; min-width: 64px; color: var(--laranja-escuro, #c4561f); }
+.pacotes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.pacote { display: grid; justify-items: center; gap: 4px; padding: 12px 6px; text-align: center; }
+.pacote img { width: 40px; height: 40px; object-fit: contain; }
+.pacote b { font-size: 15px; }
+.pacote small { font-size: 11px; font-weight: 800; color: var(--oliva-escuro, #5d7a2a); line-height: 1.2; }
+.pacote .botao { pointer-events: none; }
+.preco.confirmar { color: var(--laranja-escuro, #c4561f); font-size: 11px; }
+button.bilhete { cursor: pointer; }

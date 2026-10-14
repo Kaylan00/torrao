@@ -83,6 +83,7 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(false);
         s.setTextZoom(100);                            // tamanho de letra do sistema nao quebra o layout
         web.addJavascriptInterface(new Ponte(), "Nativo");
+        Extras.ligar(this, web);   // versão da loja: compra de laranjas e vídeo premiado
         web.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
@@ -172,6 +173,10 @@ public class MainActivity extends Activity {
             if (!vozPronta || texto == null) { js("window.CF_voz && CF_voz('fim')"); return; }
             voz.speak(texto, TextToSpeech.QUEUE_FLUSH, null, "fala");
         }
+
+        // versão da Play Store (tem compra e anúncio, e não tem aviso de versão nova pelo GitHub)
+        @JavascriptInterface
+        public boolean loja() { return BuildConfig.LOJA; }
 
         @JavascriptInterface
         public void calar() { if (vozPronta) voz.stop(); }

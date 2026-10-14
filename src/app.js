@@ -192,7 +192,7 @@
       `<button class="vaga v-${l} ${ui.vaga === l ? 'sel' : ''} ${t.poe[l] ? 'cheia' : ''}" data-acao="vaga" data-lugar="${l}" aria-label="${esc(CF.NOME_LUGAR[l])}">${t.poe[l] ? '' : '+'}</button>`).join('') : '';
     return `<main class="tela casa ${decorando ? 'decorando' : ''}" data-tela="casa">
       <section class="casa-quarto" style="--parede:url('${abs('parede_' + q.id + '.jpg')}'); --chao:url('${abs('chao_' + q.id + '.jpg')}')">
-        <div class="hud hud-casa"><span class="bilhete" title="Laranjas"><img src="${PLANTA('fruta')}" alt="Laranjas">${CF.estado.frutas}</span></div>
+        <div class="hud hud-casa"><button class="bilhete" data-acao="laranjas" title="Laranjas"><img src="${PLANTA('fruta')}" alt="Laranjas">${CF.estado.frutas}</button></div>
         <div class="quarto-base">
           <img class="quarto-fundo" src="${q.img}" alt="">
           <div class="janela" style="left:${jx}%; top:${jy}%; width:${jw}%; height:${jh}%; background-image:url('${esc(vista)}'); -webkit-mask-image:${mascara}; mask-image:${mascara}"></div>
@@ -713,8 +713,8 @@
         <img src="${esc(m.fundo ? m.previa : CF.ceuUrl())}" alt=""><span>${esc(m.nome)}</span><small>${m.id === atual ? 'na janela' : 'grátis'}</small></button>`).join('');
     } else if (lugar === 'quarto') {
       const atual = CF.quartoAtual().id;
-      itens = CF.QUARTOS.map(q => `<button class="peca quarto-op ${q.id === atual ? 'vestida' : ''}" data-acao="usarQuarto" data-id="${q.id}">
-        <img src="${q.img}" alt=""><span>${esc(q.nome)}</span><small>${q.id === atual ? 'usando' : 'grátis'}</small></button>`).join('');
+      itens = CF.QUARTOS.map(q => { const livre = CF.quartoLiberado(q.id); return `<button class="peca quarto-op ${q.id === atual ? 'vestida' : ''} ${!livre && CF.estado.frutas < CF.precoQuarto(q) ? 'caro' : ''}" data-acao="usarQuarto" data-id="${q.id}">
+        <img src="${q.img}" alt=""><span>${esc(q.nome)}</span><small>${q.id === atual ? 'usando' : livre ? (CF.TUDO_LIBERADO || !CF.precoQuarto(q) ? 'grátis' : 'seu') : precoHtml(CF.precoQuarto(q), 'quarto:' + q.id)}</small></button>`; }).join('');
     } else {
       itens = CF.MOVEIS.filter(m => m.lugar === lugar).map(m => {
         const tem = t.tem.includes(m.id), posto = t.poe[lugar] === m.id, pode = CF.estado.frutas >= m.preco;
@@ -726,6 +726,60 @@
     return `<div class="chips">${chips}</div><div class="itens-linha">${itens}</div>`;
   }
 
+  // preço em laranjas de uma peça; depois do 1º toque vira "toca de novo pra comprar"
+  function precoHtml(preco, chave) {
+    return ui.confirmaCompra === chave ? '<b class="preco confirmar">toca de novo pra comprar</b>'
+      : `<b class="preco"><img src="${PLANTA('fruta')}" alt="">${preco}</b>`;
+  }
+  // 1º toque marca, 2º compra. Devolve true quando comprou (ou já tinha)
+  function tentarCompra(chave, preco, comprar) {
+    if (CF.estado.frutas < preco) { ui.confirmaCompra = null; aviso(`Faltam ${preco - CF.estado.frutas} laranjas.`); abrirLaranjas(); return false; }
+    if (ui.confirmaCompra !== chave) { ui.confirmaCompra = chave; CF.som.toque(); return null; }
+    ui.confirmaCompra = null;
+    const r = comprar();
+    if (r === 'ok') { CF.som.laranja(); aviso(`Comprou! -${preco} laranjas`); return true; }
+    if (r === 'pouca') { abrirLaranjas(); return false; }
+    return true;
+  }
+
+  // ---------- laranjas: como ganhar estudando, vídeo premiado e pacotes (versão da Play Store) ----------
+  function abrirLaranjas() {
+    const antiga = $camada.querySelector('[aria-label="Laranjas"]'), y = antiga ? antiga.scrollTop : 0;
+    const vh = CF.loja.videosHoje(), restam = CF.loja.VIDEOS_DIA - vh, pronto = CF.loja.videoPronto();
+    const pacotes = CF.PACOTES.map((p, i) => `<button class="pacote papel r${i + 2}" data-acao="comprarPacote" data-id="${p.id}">
+        <img src="${PLANTA('fruta')}" alt=""><b>${p.qtd} laranjas</b>${p.selo ? `<small>${esc(p.selo)}</small>` : ''}<span class="botao mini laranja c2">${esc(CF.loja.preco(p.id))}</span></button>`).join('');
+    $camada.innerHTML = `<div class="escuro" data-acao="fecharFora"><div class="folha papel" role="dialog" aria-label="Laranjas">
+      <div class="folha-topo"><div style="display:grid; gap:4px"><span class="rotulo">Laranjas</span><h2>Você tem ${CF.estado.frutas}</h2></div>${FECHAR('fechar')}</div>
+      <p style="margin:0; font-weight:600">Laranja compra roupas, quartos e móveis pro Torrão, e alimenta ele.</p>
+      <div class="ganhos-lista">
+        <h3>Ganhando estudando</h3>
+        <p><b>+2</b> aprendendo as frases do dia</p>
+        <p><b>+1 ou +2</b> por frase certa na prática e na revisão</p>
+        <p><b>até +3</b> falando inglês</p>
+        <p><b>+3</b> na surpresa do dia seguinte, quando completa o dia</p>
+      </div>
+      ${CF.LOJA ? `<div class="ganhos-lista"><h3>Vídeo</h3>
+        <button class="botao azul cheio c1" data-acao="verVideo" ${restam > 0 && pronto ? '' : 'disabled'}>${restam <= 0 ? 'Volta amanhã pra mais vídeos' : pronto ? `Ver um vídeo: +${CF.loja.PREMIO_VIDEO} laranjas` : 'Carregando um vídeo...'}</button>
+        <small class="ia-status">${restam > 0 ? `${restam} de ${CF.loja.VIDEOS_DIA} vídeos hoje.` : ''} O vídeo só aparece quando você escolhe.</small></div>
+      <div class="ganhos-lista"><h3>Pacotes</h3><div class="pacotes">${pacotes}</div>
+        <small class="ia-status">Pagamento pelo Google Play. As laranjas entram na hora.</small></div>`
+      : `<p class="ia-status">Pacotes de laranja e vídeos só na versão da Play Store.</p>`}
+    </div></div>`;
+    const nova = $camada.querySelector('.folha');
+    if (antiga && nova) { nova.scrollTop = y; $camada.querySelectorAll('.escuro, .folha').forEach(el => { el.style.animation = 'none'; }); }
+  }
+
+  // a loja (pacotes e vídeo) avisa quando algo muda
+  CF.loja.aoMudar = (ev, p) => {
+    if (ev === 'compra') { CF.som.festa(); aviso(`+${p.qtd} laranjas! Valeu por apoiar o Torrão.`); }
+    else if (ev === 'cancelou') aviso('A compra não foi concluída.');
+    else if (ev === 'video-ganhou') { CF.som.laranja(); aviso(`+${CF.loja.PREMIO_VIDEO} laranjas!`); }
+    else if (ev === 'video-fechou') aviso('Assiste o vídeo até o fim pra ganhar as laranjas.');
+    else if (ev === 'video-falhou') aviso('Sem vídeo agora. Tenta de novo daqui a pouco.');
+    if ($camada.querySelector('[aria-label="Laranjas"]')) { if (ev === 'compra' || ev === 'video-ganhou') render(); abrirLaranjas(); }
+    else if (ev === 'compra' || ev === 'video-ganhou') { if (!$camada.innerHTML) render(); else if (ui.folha) { render(); abrirFolha(ui.folha); } }
+  };
+
   function abrirFolha(qual) {
     ui.folha = qual;
     const pts = CF.pontosTotal(), fase = CF.faseMostrada();
@@ -735,13 +789,13 @@
     const xs = [...$camada.querySelectorAll('.chips, .itens-linha')].map(el => el.scrollLeft);
     if (qual === 'roupas') {
       $camada.innerHTML = `<div class="escuro" data-acao="fecharFora"><div class="folha papel folha-casa" role="dialog" aria-label="${titulo}">
-        <div class="folha-topo"><h2>${titulo}</h2>${FECHAR('fechar')}</div>
+        <div class="folha-topo"><h2>${titulo}</h2>${CF.TUDO_LIBERADO ? '' : `<button class="bilhete" data-acao="laranjas"><img src="${PLANTA('fruta')}" alt="">${CF.estado.frutas}</button>`}${FECHAR('fechar')}</div>
         ${guardaRoupa(pts, fase)}
       </div></div>`;
     } else {
       // sem fundo escuro e sem fechar ao tocar fora: o quarto fica visível e os "+" do quarto continuam tocáveis
       $camada.innerHTML = `<div class="escuro claro"><div class="folha papel folha-decorar" role="dialog" aria-label="${titulo}">
-        <div class="folha-topo"><h2>${titulo}</h2><span class="bilhete"><img src="${PLANTA('fruta')}" alt="">${CF.estado.frutas}</span>${FECHAR('fechar')}</div>
+        <div class="folha-topo"><h2>${titulo}</h2><button class="bilhete" data-acao="laranjas"><img src="${PLANTA('fruta')}" alt="">${CF.estado.frutas}</button>${FECHAR('fechar')}</div>
         ${decorarHtml()}
       </div></div>`;
       [...$camada.querySelectorAll('.chips, .itens-linha')].forEach((el, k) => { if (antiga && xs[k] != null && el.classList.contains('chips')) el.scrollLeft = xs[k]; });
@@ -835,13 +889,20 @@
       const sede = CF.paraRegar().length;
       acoes = sede && !marcado ? `<button class="botao mini azul c1" data-acao="regarDia" data-n="${d.n}"><img src="${IC('gota')}" alt="">Revisar ${sede}</button>` : feito(sede ? 'Revisei' : 'Marcar como feito');
     } else if (p.id === 'efset') {
-      ic = 'trofeu'; resumo = 'Teste de nível grátis (uns 50 minutos). Faz num dia com calma.';
-      detalhe = `<p>O EF SET dá seu nível no padrão internacional (A1 a C2). ${d.n === 1 ? 'Fazendo agora você sabe de onde está partindo.' : 'Compara com o resultado anterior: é a prova de que você evoluiu.'}</p>`;
-      acoes = `<button class="botao mini azul c2" data-acao="link" data-url="https://www.efset.org/">Abrir o teste</button>` + feito('Fiz o teste');
+      ic = 'trofeu';
+      if (CF.LOJA) {
+        resumo = 'O teste de nível do app (uns 25 minutos). Faz num dia com calma.';
+        detalhe = `<p>${d.n === 1 ? 'Fazendo agora você sabe de onde está partindo.' : 'Compara com o resultado anterior: é a prova de que você evoluiu.'}</p>`;
+        acoes = `<button class="botao mini azul c2" data-acao="testeNivel">Fazer o teste</button>` + feito('Fiz o teste');
+      } else {
+        resumo = 'Teste de nível grátis (uns 50 minutos). Faz num dia com calma.';
+        detalhe = `<p>O EF SET dá seu nível no padrão internacional (A1 a C2). ${d.n === 1 ? 'Fazendo agora você sabe de onde está partindo.' : 'Compara com o resultado anterior: é a prova de que você evoluiu.'}</p>`;
+        acoes = `<button class="botao mini azul c2" data-acao="link" data-url="https://www.efset.org/">Abrir o teste</button>` + feito('Fiz o teste');
+      }
     } else if (p.id === 'resultado') {
-      ic = 'trofeu'; resumo = 'Pede pra IA seus erros mais comuns e seu nível.';
-      detalhe = `${blocoCopiar('Tell me my 5 most common mistakes and my English level.', 'Copiar pra IA')}<p>Depois manda a resposta pro Claude montar as próximas semanas.</p>`;
-      acoes = feito('Pedi');
+      // o Torrão olha as frases que você mais errou e diz o que treinar
+      ic = 'trofeu'; resumo = 'O Torrão olha as frases que você mais errou e te diz o que treinar.';
+      acoes = `<button class="botao mini azul c2" data-acao="resultadoIA" data-n="${d.n}">Pedir ao Torrão</button>` + feito('Feito');
     } else if (p.id === 'amigo') {
       ic = 'fala'; titulo = 'Conversa com o amigo';
       resumo = 'Conversou em inglês com seu amigo hoje?';
@@ -930,7 +991,8 @@
             ? `<p style="margin:0;font-weight:700">Isso apaga tudo: frases, horta e laranjas. Não tem volta.</p><div class="linha-botoes"><button class="botao terra c4" data-acao="zerar">Apagar tudo</button><button class="botao c1" data-acao="naoZerar">Cancelar</button></div>`
             : `<button class="link" data-acao="confirmaZerar">Começar do zero</button>`}
           <button class="botao kraft c4" data-acao="introVer">Ver a apresentação de novo</button>
-          ${CF.VERSAO ? `<div class="linha-botoes" style="align-items:center"><span class="ia-status">Versão ${CF.VERSAO}</span><button class="link" data-acao="conferirVersao">Conferir se tem versão nova</button></div>` : ''}
+          ${CF.VERSAO ? `<div class="linha-botoes" style="align-items:center"><span class="ia-status">Versão ${CF.VERSAO}</span>${CF.LOJA ? '' : '<button class="link" data-acao="conferirVersao">Conferir se tem versão nova</button>'}</div>` : ''}
+          ${CF.loja.temPrivacidade() ? '<button class="botao kraft c2" data-acao="privAnuncio">Privacidade dos anúncios</button>' : ''}
         </section>
       </div>
     </main>`;
@@ -952,11 +1014,11 @@
     const r = CF.estado.roupa || {};
     const pecas = CF.ROUPAS.map(x => {
       const livre = CF.roupaLiberada(x.id), vestido = livre && r[x.lugar] === x.id;
-      return `<button class="peca ${livre ? '' : 'trancada'} ${vestido ? 'vestida' : ''}" data-acao="vestir" data-id="${x.id}" ${livre ? '' : 'aria-disabled="true"'}
-        aria-label="${esc(x.nome)}${livre ? (vestido ? ', vestido' : '') : ', libera com ' + x.pts + ' pontos'}">
-        <img src="assets/roupa/${x.id}.png" alt=""><span>${esc(x.nome)}</span><small>${livre ? (vestido ? 'vestido' : 'tocar pra vestir') : x.pts + ' pontos'}</small></button>`;
+      return `<button class="peca ${vestido ? 'vestida' : ''} ${!livre && CF.estado.frutas < CF.precoRoupa(x) ? 'caro' : ''}" data-acao="vestir" data-id="${x.id}"
+        aria-label="${esc(x.nome)}${livre ? (vestido ? ', vestido' : '') : ', custa ' + CF.precoRoupa(x) + ' laranjas'}">
+        <img src="assets/roupa/${x.id}.png" alt=""><span>${esc(x.nome)}</span><small>${livre ? (vestido ? 'vestido' : 'tocar pra vestir') : precoHtml(CF.precoRoupa(x), 'roupa:' + x.id)}</small></button>`;
     }).join('');
-    const prox = CF.TUDO_LIBERADO ? null : CF.ROUPAS.find(x => pts < x.pts);
+    const prox = null;
     // cores das peças vestidas
     const cores = ['cabeca', 'rosto'].filter(l => r[l] && CF.roupaLiberada(r[l])).map(l => {
       const id = r[l], atual = CF.corDaRoupa(id).id, nome = CF.ROUPAS.find(x => x.id === id).nome;
@@ -969,9 +1031,9 @@
     const skins = CF.SKINS.map(k => {
       const livre = CF.skinLiberada(k.id), on = k.id === skinAtual;
       const f = k.filtro === 'arcoiris' ? 'hue-rotate(200deg) saturate(1.8)' : k.filtro;
-      return `<button class="peca skin ${livre ? '' : 'trancada'} ${on ? 'vestida' : ''}" data-acao="skin" data-id="${k.id}">
-        <img src="${PET_IMG(fase, 'tranquilo')}" alt="" style="${livre && f ? 'filter:' + f : ''}"><span>${esc(k.nome)}</span>
-        <small>${livre ? (on ? 'usando' : 'tocar pra usar') : k.pts + ' pontos'}</small></button>`;
+      return `<button class="peca skin ${on ? 'vestida' : ''} ${!livre && CF.estado.frutas < CF.precoSkin(k) ? 'caro' : ''}" data-acao="skin" data-id="${k.id}">
+        <img src="${PET_IMG(fase, 'tranquilo')}" alt="" style="${f ? 'filter:' + f : ''}"><span>${esc(k.nome)}</span>
+        <small>${livre ? (on ? 'usando' : 'tocar pra usar') : precoHtml(CF.precoSkin(k), 'skin:' + k.id)}</small></button>`;
     }).join('');
     const escolhida = Number.isInteger(CF.estado.idade) ? CF.estado.idade : null;
     const idades = CF.FASES_PET.map((f, k) => `<button class="peca idade ${escolhida === k ? 'vestida' : ''}" data-acao="idade" data-k="${k}">
@@ -983,7 +1045,7 @@
       <h3 style="font-size:19px">Idade</h3>
       <div class="pecas idades">${idades}</div>
       <h3 style="font-size:19px; margin-top:6px">Roupas</h3>
-      <p style="margin:0; font-weight:700; text-align:center">${prox ? `Próxima peça: ${esc(prox.nome)}, com ${prox.pts} pontos (faltam ${prox.pts - pts}).` : 'Todas as peças e skins estão liberadas. Escolhe à vontade!'}</p>
+      <p style="margin:0; font-weight:700; text-align:center">${CF.TUDO_LIBERADO ? 'Todas as peças e skins estão liberadas. Escolhe à vontade!' : 'As peças custam laranjas: você ganha estudando. Toca numa peça pra ver e toca de novo pra comprar.'}</p>
       <div class="pecas">${pecas}</div>
       ${cores}
       <h3 style="font-size:19px; margin-top:6px">Skins</h3>
@@ -1455,7 +1517,7 @@
   // O APK confere (no máximo a cada 6 horas) a última Release do repositório; se for mais nova que CF.VERSAO, avisa no quarto.
   const REPO = 'Kaylan00/torrao';
   function checarAtualizacao(forcar) {
-    if (!CF.VERSAO) return;
+    if (!CF.VERSAO || CF.LOJA) return;
     let c = {};
     try { c = JSON.parse(localStorage.getItem('torrao-atualizacao')) || {}; } catch (e) { c = {}; }
     if (c.versao > CF.VERSAO) ui.novaVersao = c;
@@ -1654,7 +1716,11 @@
       case 'vestir': {
         const x = CF.ROUPAS.find(y => y.id === b.dataset.id);
         if (!x) break;
-        if (!CF.roupaLiberada(x.id)) { aviso(`Libera com ${x.pts} pontos. Faltam ${x.pts - CF.pontosTotal()}.`); break; }
+        if (!CF.roupaLiberada(x.id)) {
+          const r = tentarCompra('roupa:' + x.id, CF.precoRoupa(x), () => CF.comprarRoupa(x.id));
+          if (r === null) { abrirFolha('roupas'); break; }
+          if (!r) break;
+        }
         CF.vestir(x.id); CF.som.marca(); render(); abrirFolha('roupas');
         { const el = $conteudo.querySelector('.casa-quarto [data-pet]'); if (el && el._pet) setTimeout(() => el._pet.pular(true), 40); }
         break;
@@ -1669,7 +1735,11 @@
       case 'skin': {
         const k = CF.SKINS.find(x => x.id === b.dataset.id);
         if (!k) break;
-        if (!CF.skinLiberada(k.id)) { aviso(`Libera com ${k.pts} pontos. Faltam ${k.pts - CF.pontosTotal()}.`); break; }
+        if (!CF.skinLiberada(k.id)) {
+          const r = tentarCompra('skin:' + k.id, CF.precoSkin(k), () => CF.comprarSkin(k.id));
+          if (r === null) { abrirFolha('roupas'); break; }
+          if (!r) break;
+        }
         CF.usarSkin(k.id); CF.som.marca(); render(); abrirFolha('roupas');
         { const el = $conteudo.querySelector('.casa-quarto [data-pet]'); if (el && el._pet) setTimeout(() => el._pet.pular(true), 40); }
         break;
@@ -1678,7 +1748,7 @@
       case 'comprarMovel': {
         const m = CF.MOVEIS.find(x => x.id === b.dataset.id);
         if (!m) break;
-        if (CF.estado.frutas < m.preco) { aviso(`Faltam ${m.preco - CF.estado.frutas} laranjas. Cumpre as metas e revisa as frases pra ganhar mais!`); break; }
+        if (CF.estado.frutas < m.preco) { aviso(`Faltam ${m.preco - CF.estado.frutas} laranjas.`); if (CF.LOJA) abrirLaranjas(); break; }
         CF.comprarMovel(m.id); ui.novoMovel = m.id; CF.som.festa(); CF.vibra(30); aviso(`${m.nome} no quarto!`); render(); abrirFolha('loja');
         { const el = $conteudo.querySelector('.casa-quarto [data-pet]'); if (el && el._pet) setTimeout(() => el._pet.pular(), 60); }
         break;
@@ -1686,7 +1756,30 @@
       case 'porMovel': CF.alternarMovel(b.dataset.id); ui.novoMovel = b.dataset.id; CF.som.toque(); render(); abrirFolha('loja'); break;
       case 'folha': CF.som.toque(); ui.folha = b.dataset.qual; if (ui.folha === 'loja') { ui.vaga = 'quarto'; render(); } abrirFolha(b.dataset.qual); break;
       case 'vaga': CF.som.toque(); ui.vaga = b.dataset.lugar; ui.folha = 'loja'; render(); abrirFolha('loja'); break;
-      case 'usarQuarto': CF.usarQuarto(b.dataset.id); CF.som.marca(); render(); abrirFolha('loja');
+      case 'usarQuarto': {
+        const q = CF.QUARTOS.find(x => x.id === b.dataset.id);
+        if (q && !CF.quartoLiberado(q.id)) {
+          const r = tentarCompra('quarto:' + q.id, CF.precoQuarto(q), () => CF.comprarQuarto(q.id));
+          if (r === null) { abrirFolha('loja'); break; }
+          if (!r) break;
+        }
+        CF.usarQuarto(b.dataset.id); CF.som.marca(); render(); abrirFolha('loja'); break;
+      }
+      case 'laranjas': CF.som.toque(); ui.folha = null; abrirLaranjas(); break;
+      case 'resultadoIA': {
+        const erradas = Object.keys(CF.estado.cartas).filter(id => CF.TODAS_CARTAS[id] && CF.estado.cartas[id].erro)
+          .sort((a, b) => CF.estado.cartas[b].erro - CF.estado.cartas[a].erro).slice(0, 12)
+          .map(id => { const c = CF.TODAS_CARTAS[id]; return `"${c.tipo === 'ouvir' ? c.pt : c.en[0]}" (errei ${CF.estado.cartas[id].erro}x)`; });
+        abrirChat('duvida', Number(b.dataset.n), erradas.length
+          ? `Estas são as frases que eu mais errei no app: ${erradas.join('; ')}. Quais são os meus erros mais comuns, qual parece ser o meu nível e o que eu devo treinar nas próximas semanas?`
+          : 'Ainda não errei nenhuma frase no app. O que um brasileiro no nível A2 costuma errar e o que eu devo treinar nas próximas semanas?');
+        break;
+      }
+      case 'comprarPacote':
+        if (!CF.loja.temCompra()) { aviso('Os pacotes só funcionam na versão da Play Store.'); break; }
+        CF.loja.comprar(b.dataset.id); break;
+      case 'verVideo': CF.loja.verVideo(); break;
+      case 'privAnuncio': CF.loja.privacidade(); break;
         { const el = $conteudo.querySelector('.casa-quarto [data-pet]'); if (el && el._pet) setTimeout(() => el._pet.pular(), 60); } break;
       case 'introProx': CF.som.toque(); intro(Number(b.dataset.i)); break;
       case 'introPular': case 'introFim':
@@ -1772,4 +1865,5 @@
   render();
   if (!CF.estado.introVista) intro(0); else checarEvolucao();
   checarAtualizacao();
+  if (CF.LOJA) CF.loja.iniciar();
 })();

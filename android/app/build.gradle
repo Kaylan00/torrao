@@ -1,8 +1,16 @@
 plugins { id 'com.android.application' }
 
 // App = uma WebView com o Torrão dentro (app/src/main/assets/www, copiado por tools/build_apk.py).
-// Por enquanto assinado com a chave de teste (debug): serve pra instalar no celular.
-// Pra Play Store vai precisar de uma chave oficial própria (igual ao Frutas Fujonas).
+// Chave oficial (14/10/2026): ~/androidtools/chaves/torrao.jks + torrao.properties (cópia em D:\backups\chaves_torrao).
+// PERDER ESSA CHAVE = não dá mais pra atualizar o app na Play Store. Sem o arquivo, cai na chave de teste (debug).
+def chave = new Properties()
+def chaveArq = new File(System.getProperty('user.home'), 'androidtools/chaves/torrao.properties')
+if (chaveArq.exists()) chaveArq.withInputStream { chave.load(it) }
+
+// AdMob: IDs de TESTE do Google (anúncio de mentira). Quando tiver a conta do AdMob, troca pelos de verdade aqui.
+def ADMOB_APP = 'ca-app-pub-3940256099942544~3347511713'
+def ADMOB_PREMIADO = 'ca-app-pub-3940256099942544/5224354917'
+
 android {
     namespace 'com.temperaguache.torrao'
     compileSdk 36
@@ -14,10 +22,41 @@ android {
         versionCode((project.findProperty('vCode') ?: '1').toInteger())
         versionName "1." + (project.findProperty('vCode') ?: '1')
     }
+    signingConfigs {
+        oficial {
+            if (chave['storeFile']) {
+                storeFile file(chave['storeFile'])
+                storePassword chave['storePassword']
+                keyAlias chave['keyAlias']
+                keyPassword chave['keyPassword']
+            }
+        }
+    }
+    // duas versões do mesmo app:
+    //   loja   = Play Store (AAB): compra de laranjas pelo Google Play Billing e vídeo premiado (AdMob), sem aviso de versão nova
+    //   amigos = APK do GitHub: tudo liberado, sem compra e sem anúncio, com o aviso "Versão nova!"
+    flavorDimensions 'canal'
+    productFlavors {
+        loja {
+            dimension 'canal'
+            buildConfigField 'boolean', 'LOJA', 'true'
+            buildConfigField 'String', 'ADMOB_PREMIADO', "\"${ADMOB_PREMIADO}\""
+            manifestPlaceholders = [admobApp: ADMOB_APP]
+            signingConfig chave['storeFile'] ? signingConfigs.oficial : signingConfigs.debug
+        }
+        amigos {
+            dimension 'canal'
+            buildConfigField 'boolean', 'LOJA', 'false'
+            buildConfigField 'String', 'ADMOB_PREMIADO', '""'
+            manifestPlaceholders = [admobApp: '']
+            // continua na chave de teste: quem já tem o APK instalado atualiza por cima sem perder o progresso
+            signingConfig signingConfigs.debug
+        }
+    }
+    buildFeatures { buildConfig true }
     buildTypes {
         release {
             minifyEnabled false
-            signingConfig signingConfigs.debug
         }
     }
     compileOptions {
@@ -28,4 +67,11 @@ android {
         noCompress 'png', 'jpg', 'woff2'
         ignoreAssetsPattern '!.svn:!.git:.*:!CVS:!thumbs.db:!picasa.ini:!*.scc:*~'
     }
+}
+
+dependencies {
+    // só a versão da loja usa (o código só liga quando BuildConfig.LOJA)
+    lojaImplementation 'com.android.billingclient:billing:8.3.0'
+    lojaImplementation 'com.google.android.gms:play-services-ads:24.9.0'
+    lojaImplementation 'com.google.android.ump:user-messaging-platform:3.2.0'
 }

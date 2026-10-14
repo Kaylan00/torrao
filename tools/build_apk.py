@@ -80,17 +80,21 @@ def grava_versao(v):
 
 
 def compila(v):
+    """Gera as duas versões: amigos (APK do GitHub) e loja (AAB pra Play Store)."""
     env = dict(os.environ, JAVA_HOME=os.path.join(TOOLS, 'jdk21'))
     gradle = os.path.join(TOOLS, 'gradle-8.11.1', 'bin', 'gradle.bat')
-    r = subprocess.run([gradle, 'assembleRelease', '--offline', '-q', '-PvCode=%d' % v], cwd=AND, env=env, shell=True)
+    tarefas = ['assembleAmigosRelease', 'bundleLojaRelease', '-q', '-PvCode=%d' % v]
+    r = subprocess.run([gradle] + tarefas + ['--offline'], cwd=AND, env=env, shell=True)
     if r.returncode:
-        r = subprocess.run([gradle, 'assembleRelease', '-q', '-PvCode=%d' % v], cwd=AND, env=env, shell=True)
+        r = subprocess.run([gradle] + tarefas, cwd=AND, env=env, shell=True)
     if r.returncode:
         sys.exit('falhou o gradle')
-    apk = os.path.join(AND, 'app', 'build', 'outputs', 'apk', 'release', 'app-release.apk')
-    out = os.path.join(ROOT, 'Torrao.apk')
-    shutil.copy2(apk, out)
-    print('APK:', out, '%.1f MB' % (os.path.getsize(out) / 1e6), 'versao', v)
+    apk = os.path.join(AND, 'app', 'build', 'outputs', 'apk', 'amigos', 'release', 'app-amigos-release.apk')
+    aab = os.path.join(AND, 'app', 'build', 'outputs', 'bundle', 'lojaRelease', 'app-loja-release.aab')
+    shutil.copy2(apk, os.path.join(ROOT, 'Torrao.apk'))
+    shutil.copy2(aab, os.path.join(ROOT, 'Torrao.aab'))
+    print('APK (amigos):', os.path.join(ROOT, 'Torrao.apk'), '%.1f MB' % (os.path.getsize(apk) / 1e6), 'versao', v)
+    print('AAB (loja):', os.path.join(ROOT, 'Torrao.aab'), '%.1f MB' % (os.path.getsize(aab) / 1e6))
 
 
 if __name__ == '__main__':

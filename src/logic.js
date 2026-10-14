@@ -94,7 +94,7 @@ window.CF = window.CF || {};
     p.push({ id: 'ouvir', tipo: 'check', pts: 10, opcional: true });
     if (!d.tipo) p.push({ id: 'anki', tipo: 'check', pts: 10, opcional: true });
     if (d.efset) p.push({ id: 'efset', tipo: 'check', pts: 20, opcional: true });
-    p.push({ id: 'amigo', tipo: 'check', pts: 15, opcional: true });
+    if (!CF.LOJA) p.push({ id: 'amigo', tipo: 'check', pts: 15, opcional: true });
     return p;
   };
 
@@ -256,7 +256,23 @@ window.CF = window.CF || {};
   };
 
   // ---------- guarda-roupa ----------
-  CF.roupaLiberada = id => { const r = CF.ROUPAS.find(x => x.id === id); return !!r && (CF.TUDO_LIBERADO || CF.pontosTotal() >= r.pts); };
+  // preços em laranjas (só valem na versão da Play Store; nas outras está tudo liberado)
+  const GRATIS_ROUPA = ['bone', 'bandana', 'festa'];
+  CF.precoRoupa = r => (GRATIS_ROUPA.includes(r.id) ? 0 : r.pts <= 500 ? 25 : r.pts <= 1100 ? 40 : r.pts <= 2000 ? 60 : 80);
+  CF.precoSkin = s => (s.id === 'terra' ? 0 : s.pts <= 600 ? 40 : s.pts <= 1600 ? 70 : 100);
+  CF.precoQuarto = q => ({ listras: 0, toca: 50, cabana: 60, celeste: 80 }[q.id] || 0);
+  const tem = (lista, id) => (CF.estado[lista] || []).includes(id);
+  // compra com laranjas: 'ok' | 'pouca' (não tem laranja suficiente) | 'ja' (já tinha)
+  function comprarCom(lista, id, preco) {
+    if (tem(lista, id) || !preco) return 'ja';
+    if (CF.estado.frutas < preco) return 'pouca';
+    CF.estado.frutas -= preco;
+    (CF.estado[lista] = CF.estado[lista] || []).push(id);
+    CF.marcarAtividade(); CF.salvar();
+    return 'ok';
+  }
+  CF.roupaLiberada = id => { const r = CF.ROUPAS.find(x => x.id === id); return !!r && (CF.TUDO_LIBERADO || !CF.precoRoupa(r) || tem('roupasTem', id)); };
+  CF.comprarRoupa = id => { const r = CF.ROUPAS.find(x => x.id === id); return r ? comprarCom('roupasTem', id, CF.precoRoupa(r)) : 'ja'; };
   CF.vestir = function (id) {
     const r = CF.ROUPAS.find(x => x.id === id);
     if (!r || !CF.roupaLiberada(id)) return false;
@@ -267,7 +283,7 @@ window.CF = window.CF || {};
   };
   // peças que acabaram de ser liberadas (pra avisar uma vez só)
   CF.roupasNovas = function () {
-    if (CF.TUDO_LIBERADO) return [];
+    if (CF.TUDO_LIBERADO || CF.LOJA) return [];
     CF.estado.roupasVistas = CF.estado.roupasVistas || [];
     const novas = CF.ROUPAS.filter(r => CF.roupaLiberada(r.id) && !CF.estado.roupasVistas.includes(r.id));
     if (novas.length) { novas.forEach(r => CF.estado.roupasVistas.push(r.id)); CF.salvar(); }
@@ -275,7 +291,8 @@ window.CF = window.CF || {};
   };
 
   // ---------- skins e cores ----------
-  CF.skinLiberada = id => { const s = CF.SKINS.find(x => x.id === id); return !!s && (CF.TUDO_LIBERADO || CF.pontosTotal() >= s.pts); };
+  CF.skinLiberada = id => { const s = CF.SKINS.find(x => x.id === id); return !!s && (CF.TUDO_LIBERADO || !CF.precoSkin(s) || tem('skinsTem', id)); };
+  CF.comprarSkin = id => { const s = CF.SKINS.find(x => x.id === id); return s ? comprarCom('skinsTem', id, CF.precoSkin(s)) : 'ja'; };
   CF.skinAtual = function () {
     const s = CF.SKINS.find(x => x.id === CF.estado.skin);
     return s && CF.skinLiberada(s.id) ? s : CF.SKINS[0];
@@ -302,9 +319,11 @@ window.CF = window.CF || {};
     }
     return t;
   };
-  // quarto (papel de parede e chão): trocar é de graça
-  CF.quartoAtual = () => CF.QUARTOS.find(q => q.id === CF.toca().quarto) || CF.QUARTOS[0];
-  CF.usarQuarto = function (id) { if (!CF.QUARTOS.find(q => q.id === id)) return false; CF.toca().quarto = id; CF.salvar(); return true; };
+  // quarto (papel de parede e chão): o listrado é de graça; na versão da loja os outros custam laranjas
+  CF.quartoLiberado = id => { const q = CF.QUARTOS.find(x => x.id === id); return !!q && (CF.TUDO_LIBERADO || !CF.precoQuarto(q) || tem('quartosTem', id)); };
+  CF.comprarQuarto = id => { const q = CF.QUARTOS.find(x => x.id === id); return q ? comprarCom('quartosTem', id, CF.precoQuarto(q)) : 'ja'; };
+  CF.quartoAtual = () => CF.QUARTOS.find(q => q.id === CF.toca().quarto && CF.quartoLiberado(q.id)) || CF.QUARTOS[0];
+  CF.usarQuarto = function (id) { if (!CF.quartoLiberado(id)) return false; CF.toca().quarto = id; CF.salvar(); return true; };
   CF.comprarMovel = function (id) {
     const m = CF.MOVEIS.find(x => x.id === id), t = CF.toca();
     if (!m || t.tem.includes(id) || CF.estado.frutas < m.preco) return false;
