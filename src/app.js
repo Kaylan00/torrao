@@ -580,6 +580,7 @@
             <div class="linha-botoes"><button class="botao verde c2" data-acao="iaSalvar">Salvar</button><button class="botao kraft c3" data-acao="iaTestar">Testar a IA</button></div>
             <p class="ia-status">${ia.chave ? 'Chave salva.' : 'Sem chave: o app funciona, só sem a IA.'}</p>
           </div>
+          ${vozAjusteHtml()}
           <button class="botao kraft c1" data-acao="som">${CF.estado.som ? 'Som e vibração: ligados' : 'Som e vibração: desligados'}</button>
           <button class="botao kraft c2" data-acao="backup">Copiar backup do progresso</button>
           ${ui.mostraRestaurar
@@ -593,6 +594,17 @@
         </section>
       </div>
     </main>`;
+  }
+
+  function vozAjusteHtml() {
+    const lista = CF.voz.vozes(), atual = CF.voz.atual(), vel = CF.voz.cfg().vel || 1;
+    return `<div class="ia-ajuste"><b>Voz do Torrão</b>
+      ${lista.length ? `<p>Escolhe o sotaque. Ele fala com essa voz na aula, na revisão e na conversa.</p>
+        <select id="vozEscolha">${lista.map(v => `<option value="${esc(v.id)}" ${atual && v.id === atual.id ? 'selected' : ''}>${esc(v.nome)}</option>`).join('')}</select>
+        <div class="linha-botoes"><button class="botao kraft c3" data-acao="vozOuvir">Ouvir</button><button class="botao kraft c1" data-acao="vozVel">${vel < 1 ? 'Velocidade: devagar' : 'Velocidade: normal'}</button></div>
+        <p class="ia-status">Quer mais vozes? No celular: Configurações > Idioma > Saída de texto para fala > Google > Instalar dados de voz > Inglês.</p>`
+        : `<p class="ia-status">As vozes ainda estão carregando. Sai e volta pra essa tela daqui a pouco.</p>`}
+    </div>`;
   }
 
   // ---------- guarda-roupa ----------
@@ -890,8 +902,12 @@
     const nomes = { 10: 'Falei sozinho em voz alta', 20: 'Conversei com uma IA', 30: 'Conversei com uma pessoa' };
     $camada.innerHTML = `<div class="escuro" data-acao="fecharFora"><div class="folha papel" role="dialog" aria-label="Falar">
       <div class="folha-topo"><div style="display:grid; gap:4px"><span class="rotulo">Dia ${n} · Falar</span><h2>Bora falar inglês</h2></div>${FECHAR('fechar')}</div>
-      <p style="margin:0; font-weight:600">O jeito mais fácil: conversa escrevendo com o Torrão. Ele corrige seus erros com jeitinho.</p>
-      <button class="botao grande laranja cheio c2" data-acao="abrirConversa" data-n="${n}"><img src="${IC('fala')}" alt="">Conversar com o Torrão</button>
+      ${CF.voz.podeOuvir()
+        ? `<p style="margin:0; font-weight:600">Conversa com o Torrão em inglês, falando de verdade. Ele te ouve, responde com voz e corrige seus erros com jeitinho.</p>
+      <button class="botao grande laranja cheio c2" data-acao="abrirConversa" data-n="${n}" data-voz="1"><img src="${IC('mic')}" alt="">Conversar falando</button>
+      <button class="botao kraft cheio c3" data-acao="abrirConversa" data-n="${n}"><img src="${IC('fala')}" alt="">Conversar escrevendo</button>`
+        : `<p style="margin:0; font-weight:600">O jeito mais fácil: conversa escrevendo com o Torrão. Ele corrige seus erros com jeitinho.</p>
+      <button class="botao grande laranja cheio c2" data-acao="abrirConversa" data-n="${n}"><img src="${IC('fala')}" alt="">Conversar com o Torrão</button>`}
       <span class="rotulo" style="margin-top:6px">Ou marca o que você fez</span>
       <div class="opcoes-falar">${(p ? p.opcoes : [10, 20, 30]).map((v, i) => `<button class="botao ${r.usar === v ? 'on' : 'kraft'} c${i + 1}" data-acao="usarFalar" data-n="${n}" data-v="${v}">${nomes[v]}<small>+${CF.laranjasPasso('usar', v)}</small></button>`).join('')}</div>
       <details class="como"><summary>Conversar por voz com uma IA</summary><p>No Gemini Live ou no modo de voz do Claude, começa com:</p>${blocoCopiar(CF.promptIA(d.ia, CF.semanaDe(n)), 'Copiar')}</details>
@@ -899,13 +915,15 @@
   }
 
   // ---------- conversa com o Torrão (IA): treinar inglês ou tirar dúvida ----------
-  function abrirChat(modo, n, pergunta) {
+  function abrirChat(modo, n, pergunta, voz) {
     const dia = n || CF.diaAtual();
     const ola = modo === 'conversa'
       ? "Hi! I'm Torrão. Let's chat in English! How are you today?"
       : 'Oi! Pode me perguntar qualquer coisa sobre inglês: uma palavra, uma frase, a diferença entre duas coisas...';
-    chat = { modo, n: dia, msgs: [{ role: 'assistant', content: ola }], esperando: false, rascunho: '', voltar: apr ? 'aprender' : diaAberto ? 'dia' : null };
+    chat = { modo, n: dia, msgs: [{ role: 'assistant', content: ola }], esperando: false, rascunho: '', voltar: apr ? 'aprender' : diaAberto ? 'dia' : null,
+      voz: !!voz && modo === 'conversa' && CF.voz.podeOuvir(), estado: 'parado', parcial: '', aviso: '' };
     renderChat();
+    if (chat.voz && CF.ia.pronta()) falarTorrao(ola);
     if (pergunta && CF.ia.pronta()) enviarChat(pergunta);
   }
 
@@ -918,24 +936,82 @@
       const meu = m.role === 'user';
       let html = esc(m.content).replace(/\n/g, '<br>');
       if (!meu) html = html.replace(/^(Dica:.*?)(<br>|$)/, '<span class="msg-dica">$1</span>');
-      const falar = !meu && conversa ? `data-acao="falar" data-texto="${esc(m.content.replace(/^Dica:.*(\n|$)/, ''))}"` : '';
+      const falar = !meu && conversa ? `data-acao="falar" data-texto="${esc(semDica(m.content))}"` : '';
       return `<div class="msg ${meu ? 'eu' : 'ele'}" ${falar}>${html}</div>`;
     }).join('');
-    const dica = conversa ? `<div class="chat-tema">Tema de hoje: ${esc(CF.dia(chat.n).tema)}. Escreve em inglês; se travar, escreve em português que ele te ajuda. ${minhas < 4 ? `Troca ${4 - minhas} ${4 - minhas === 1 ? 'mensagem' : 'mensagens'} pra completar a meta.` : 'Meta feita! Pode continuar ou tocar em Terminei.'}</div>` : '';
+    const dica = conversa ? `<div class="chat-tema">Tema de hoje: ${esc(CF.dia(chat.n).tema)}. ${chat.voz ? 'Fala em inglês; se travar, fala em português que ele te ajuda.' : 'Escreve em inglês; se travar, escreve em português que ele te ajuda.'} ${minhas < 4 ? `Troca ${4 - minhas} ${4 - minhas === 1 ? 'mensagem' : 'mensagens'} pra completar a meta.` : 'Meta feita! Pode continuar ou tocar em Terminei.'}</div>` : '';
     $camada.innerHTML = `<div class="chat" role="dialog" aria-label="Conversa com o Torrão">
-      <div class="chat-topo">${FECHAR('fecharChat')}<div class="chat-titulo"><b>${conversa ? 'Conversar em inglês' : 'Perguntar ao Torrão'}</b><small>${conversa ? 'Toca na fala dele pra ouvir' : 'Dúvidas sobre inglês'}</small></div>
+      <div class="chat-topo">${FECHAR('fecharChat')}<div class="chat-titulo"><b>${conversa ? 'Conversar em inglês' : 'Perguntar ao Torrão'}</b><small>${chat.voz ? 'Fala em inglês, ele responde com voz' : conversa ? 'Toca na fala dele pra ouvir' : 'Dúvidas sobre inglês'}</small></div>
         ${conversa && minhas >= 4 ? `<button class="botao mini verde c3" data-acao="chatFim">Terminei</button>` : ''}</div>
       ${ia ? `${dica}<div class="chat-msgs">${bolhas}${chat.esperando ? '<div class="msg ele"><span class="bolinhas"><i></i><i></i><i></i></span></div>' : ''}</div>
-      <div class="chat-escrever"><input id="chatInput" type="text" autocomplete="off" enterkeyhint="send" placeholder="${conversa ? 'Escreve em inglês...' : 'Escreve sua dúvida...'}" value="${esc(chat.rascunho)}"><button class="botao laranja c2" data-acao="chatEnviar" ${chat.esperando ? 'disabled' : ''}>Enviar</button></div>`
+      ${chat.voz
+        ? `<div class="chat-voz"><div class="voz-status" aria-live="polite"></div>
+            <button class="mic ${chat.estado}" data-acao="micToque" aria-label="Microfone"><img src="${IC('mic')}" alt=""></button>
+            <button class="link" data-acao="chatModo">Prefiro escrever</button></div>`
+        : `<div class="chat-escrever">${conversa && CF.voz.podeOuvir() ? `<button class="mic-mini" data-acao="chatModo" aria-label="Conversar falando"><img src="${IC('mic')}" alt=""></button>` : ''}<input id="chatInput" type="text" autocomplete="off" enterkeyhint="send" placeholder="${conversa ? 'Escreve em inglês...' : 'Escreve sua dúvida...'}" value="${esc(chat.rascunho)}"><button class="botao laranja c2" data-acao="chatEnviar" ${chat.esperando ? 'disabled' : ''}>Enviar</button></div>`}`
       : `<div class="papel r3 chat-sem"><span class="fita"></span><h2>Falta a chave da IA</h2><p>Pra conversar com o Torrão, cola sua chave da OpenRouter nos Ajustes (aba Progresso). É grátis.</p><button class="botao laranja c2" data-acao="irAjustes">Ir pros Ajustes</button></div>`}
     </div>`;
     const lista = $camada.querySelector('.chat-msgs');
     if (lista) lista.scrollTop = lista.scrollHeight;
+    atualizaVoz();
     const inp = document.getElementById('chatInput');
     if (inp) {
       inp.addEventListener('input', () => { if (chat) chat.rascunho = inp.value; });
       inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); enviarChat(); } });
     }
+  }
+
+  const semDica = s => String(s).replace(/^\s*Dica:.*$/gim, '').trim();
+
+  // ---------- conversa falada: o Torrão fala, depois escuta; você fala, ele responde ----------
+  const TXT_VOZ = {
+    parado: 'Toca no microfone e fala em inglês',
+    ouvindo: 'Pode falar...',
+    pensando: 'O Torrão está pensando...',
+    falando: 'O Torrão está falando (toca pra interromper)'
+  };
+  function atualizaVoz() {
+    if (!chat || !chat.voz) return;
+    const st = $camada.querySelector('.voz-status'), mic = $camada.querySelector('.mic');
+    if (st) st.textContent = chat.estado === 'ouvindo' && chat.parcial ? chat.parcial : (chat.estado === 'parado' && chat.aviso) || TXT_VOZ[chat.estado];
+    if (mic) mic.className = 'mic ' + chat.estado;
+  }
+  function falarTorrao(texto) {
+    if (!chat || !chat.voz) return;
+    const alvo = chat;
+    chat.estado = 'falando'; chat.aviso = ''; atualizaVoz();
+    CF.voz.falar(semDica(texto), () => { if (chat === alvo && chat.voz && chat.estado === 'falando') ouvirFala(); });
+  }
+  function ouvirFala() {
+    if (!chat || !chat.voz) return;
+    const alvo = chat;
+    chat.estado = 'ouvindo'; chat.parcial = ''; chat.aviso = ''; atualizaVoz();
+    CF.voz.ouvir(ev => {
+      if (chat !== alvo || !chat.voz) return;
+      if (ev.tipo === 'parcial' || ev.tipo === 'final') { chat.parcial = ev.texto || ''; atualizaVoz(); }
+      else if (ev.tipo === 'nivel') { const m = $camada.querySelector('.mic'); if (m) m.style.setProperty('--nivel', Math.max(0, Math.min(1, (ev.nivel + 2) / 12)).toFixed(2)); }
+      else if (ev.tipo === 'erro') {
+        if (chat.estado !== 'ouvindo') return;
+        chat.estado = 'parado';
+        chat.aviso = ev.erro === 'silencio' ? 'Não ouvi nada. Toca no microfone e fala de novo.'
+          : ev.erro === 'permissao' ? 'O app precisa do microfone. Toca de novo e permite.'
+            : ev.erro === 'rede' ? 'Sem internet pra entender a fala agora.'
+              : ev.erro === 'sem' ? 'Esse celular não tem reconhecimento de fala. Usa o modo escrever.' : 'Não deu pra ouvir. Toca no microfone de novo.';
+        atualizaVoz();
+      } else if (ev.tipo === 'fim') {
+        if (chat.estado !== 'ouvindo') return;
+        const t = String(ev.texto || chat.parcial || '').trim();
+        chat.parcial = '';
+        if (t) { chat.estado = 'pensando'; enviarChat(t); }
+        else { chat.estado = 'parado'; chat.aviso = 'Não ouvi nada. Toca no microfone e fala de novo.'; atualizaVoz(); }
+      }
+    });
+  }
+  function tocarMic() {
+    if (!chat || !chat.voz) return;
+    if (chat.estado === 'ouvindo') { CF.voz.pararOuvir(); return; }
+    if (chat.estado === 'pensando') return;
+    CF.voz.calar(); ouvirFala();
   }
 
   async function enviarChat(texto) {
@@ -946,13 +1022,18 @@
     const alvo = chat;
     try {
       const hist = chat.msgs.filter(m => m.role !== 'erro').slice(-12).map(m => ({ role: m.role, content: m.content }));
-      const r = await CF.ia.pedir([{ role: 'system', content: CF.ia.sistema(chat.modo, CF.dia(chat.n)) }].concat(hist), { temp: 0.6, max: 400 });
+      const r = await CF.ia.pedir([{ role: 'system', content: CF.ia.sistema(chat.modo, CF.dia(chat.n), chat.voz) }].concat(hist), { temp: 0.6, max: 400 });
       if (chat !== alvo) return;
       chat.msgs.push({ role: 'assistant', content: r });
-      if (chat.modo === 'conversa') CF.falar(r.replace(/^Dica:.*(\n|$)/, ''));
+      chat.esperando = false;
+      renderChat();
+      if (chat.voz) falarTorrao(r);
+      else if (chat.modo === 'conversa') CF.falar(semDica(r));
+      return;
     } catch (e) {
       if (chat !== alvo) return;
       chat.msgs.push({ role: 'erro', content: e.message });
+      if (chat.voz) { chat.estado = 'parado'; chat.aviso = 'Toca no microfone pra tentar de novo.'; }
     }
     chat.esperando = false;
     renderChat();
@@ -960,6 +1041,7 @@
 
   function fecharChat() {
     const v = chat && chat.voltar;
+    CF.voz.largar(); CF.voz.calar();
     chat = null;
     if (v === 'aprender' && apr) renderAprender();
     else if (v === 'dia' && diaAberto) abrirDia(diaAberto);
@@ -1082,6 +1164,10 @@
     rev.dia = daFolha ? n : null;
   }
 
+  document.addEventListener('change', e => {
+    if (e.target && e.target.id === 'vozEscolha') { CF.voz.salvar({ id: e.target.value }); CF.voz.falar("Hi! I'm going to talk like this now."); }
+  });
+
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-acao]');
     if (!b) return;
@@ -1115,7 +1201,7 @@
       case 'perguntarFrase': abrirChat('duvida', apr ? apr.n : CF.diaAtual(), `Me explica a frase "${b.dataset.texto}": quando usar e como responder.`); break;
       case 'perguntar': CF.som.toque(); abrirChat('duvida'); break;
       case 'falarDia': CF.som.toque(); abrirFalar(Number(b.dataset.n)); break;
-      case 'abrirConversa': CF.som.toque(); abrirChat('conversa', Number(b.dataset.n)); break;
+      case 'abrirConversa': CF.som.toque(); abrirChat('conversa', Number(b.dataset.n), null, b.dataset.voz === '1'); break;
       case 'usarFalar': {
         const n = Number(b.dataset.n), r = CF.registro(n), v = Number(b.dataset.v);
         if (r.usar === v) { aviso('Isso já está marcado.'); fecharCamada(); break; }
@@ -1124,12 +1210,22 @@
         CF.salvar(); fecharCamada(); break;
       }
       case 'chatEnviar': enviarChat(); break;
+      case 'micToque': tocarMic(); break;
+      case 'vozOuvir': CF.voz.falar("Hi! Let's practice English together. How was your day?"); break;
+      case 'vozVel': CF.voz.salvar({ vel: (CF.voz.cfg().vel || 1) < 1 ? 1 : 0.82 }); render(); CF.voz.falar('This is how fast I talk now.'); break;
+      case 'chatModo':
+        if (!chat) break;
+        chat.voz = !chat.voz; chat.estado = 'parado'; chat.aviso = '';
+        CF.voz.largar(); CF.voz.calar(); renderChat();
+        if (chat.voz) ouvirFala();
+        break;
       case 'chatFim': {
         const n = chat.n, r = CF.registro(n);
         if ((r.usar || 0) < 20) r.usar = 20;
         ui.ultimoDia = n; CF.marcarAtividade();
         const q = CF.ganharPasso(n, 'usar', r.usar); CF.salvar();
         if (q) aviso(`Conversa feita! +${q} laranjas`);
+        CF.voz.largar(); CF.voz.calar();
         chat = null; fecharCamada(); break;
       }
       case 'fecharChat': fecharChat(); break;

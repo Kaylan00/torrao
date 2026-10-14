@@ -4,6 +4,8 @@
     <!-- vibrar no acerto/erro da revisão -->
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- conversa por voz: o Torrão ouve o que você fala em inglês -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
     <!-- abrir links (vídeo do YouTube) e achar o leitor de voz do Android -->
     <queries>
@@ -13,6 +15,9 @@
         </intent>
         <intent>
             <action android:name="android.intent.action.TTS_SERVICE"/>
+        </intent>
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
         </intent>
     </queries>
 
