@@ -13,7 +13,7 @@
   }).observe($camada, { childList: true });
   const $aviso = document.getElementById('aviso');
 
-  const ui = { tela: 'casa', folha: null, vaga: 'quarto', ultimoDia: null, adiantar: false, fala: null, confirmaZerar: false, mostraRestaurar: false };
+  const ui = { tela: 'estudar', folha: null, vaga: 'quarto', ultimoDia: null, adiantar: false, fala: null, confirmaZerar: false, mostraRestaurar: false };
   let rev = null;          // revisão aberta
   let diaAberto = null;    // folha do dia aberta
   let plantaAberta = null; // folha da planta aberta
@@ -140,15 +140,17 @@
   function render() {
     aplicarCeu();
     let html;
-    if (ui.tela === 'casa') html = telaCasa();
+    $app.dataset.tela = ui.tela;
+    if (ui.tela === 'estudar') html = telaEstudar();
+    else if (ui.tela === 'casa') html = telaCasa();
     else if (ui.tela === 'horta') html = telaHorta();
     else if (ui.tela === 'hoje') html = telaHoje();
     else html = telaProgresso();
     const regar = CF.paraRegar().length;
     html += `<nav class="nav" aria-label="Telas">
-      <button data-acao="tela" data-tela="casa" ${ui.tela === 'casa' ? 'aria-current="page"' : ''}><img src="assets/toca/icone.png" alt="">Casa</button>
-      <button data-acao="tela" data-tela="horta" ${ui.tela === 'horta' ? 'aria-current="page"' : ''}><img src="${PLANTA('frutos')}" alt="">Horta${regar ? `<span class="bolinha">${regar}</span>` : ''}</button>
-      <button data-acao="tela" data-tela="hoje" ${ui.tela === 'hoje' ? 'aria-current="page"' : ''}><img src="assets/mapa/feito.png" alt="">Mapa</button>
+      <button data-acao="tela" data-tela="estudar" ${ui.tela === 'estudar' || ui.tela === 'hoje' ? 'aria-current="page"' : ''}><img src="${IC('video')}" alt="">Estudar</button>
+      <button data-acao="tela" data-tela="horta" ${ui.tela === 'horta' ? 'aria-current="page"' : ''}><img src="${PLANTA('frutos')}" alt="">Frases${regar ? `<span class="bolinha">${regar}</span>` : ''}</button>
+      <button data-acao="tela" data-tela="casa" ${ui.tela === 'casa' ? 'aria-current="page"' : ''}><img src="assets/toca/icone.png" alt="">Torrão</button>
       <button data-acao="tela" data-tela="progresso" ${ui.tela === 'progresso' ? 'aria-current="page"' : ''}><img src="${IC('trofeu')}" alt="">Progresso</button>
     </nav>`;
     const antiga = $conteudo.querySelector('.tela');
@@ -190,7 +192,7 @@
       `<button class="vaga v-${l} ${ui.vaga === l ? 'sel' : ''} ${t.poe[l] ? 'cheia' : ''}" data-acao="vaga" data-lugar="${l}" aria-label="${esc(CF.NOME_LUGAR[l])}">${t.poe[l] ? '' : '+'}</button>`).join('') : '';
     return `<main class="tela casa ${decorando ? 'decorando' : ''}" data-tela="casa">
       <section class="casa-quarto" style="--parede:url('${abs('parede_' + q.id + '.jpg')}'); --chao:url('${abs('chao_' + q.id + '.jpg')}')">
-        ${hojeHtml(regar)}
+        <div class="hud hud-casa"><span class="bilhete" title="Laranjas"><img src="${PLANTA('fruta')}" alt="Laranjas">${CF.estado.frutas}</span></div>
         <div class="quarto-base">
           <img class="quarto-fundo" src="${q.img}" alt="">
           <div class="janela" style="left:${jx}%; top:${jy}%; width:${jw}%; height:${jh}%; background-image:url('${esc(vista)}'); -webkit-mask-image:${mascara}; mask-image:${mascara}"></div>
@@ -209,6 +211,336 @@
       </nav>
       </section>
     </main>`;
+  }
+
+  // ---------- Estudar: a tela inicial, com cara de app de estudo (o quarto do Torrão virou a recompensa, na aba dele) ----------
+  const PASSO_INFO = {
+    aprender: ['Aprender as frases', 'Ouve e repete as frases novas do dia.', 'video', '5 min'],
+    testar: ['Praticar escrevendo', 'Escreve cada frase em inglês e a IA corrige.', 'cerebro', '5 min'],
+    usar: ['Falar inglês', 'Conversa por voz com o Torrão sobre o tema.', 'mic', '10 min'],
+    regar: ['Revisar', 'As frases que estão pedindo revisão hoje.', 'gota', '5 min'],
+    resultado: ['Resultado da semana', 'Pede pra IA seus erros mais comuns.', 'trofeu', '5 min']
+  };
+  const NIVEL_TXT = {
+    A1: 'Entende e usa frases bem simples do dia a dia.',
+    A2: 'Se comunica em situações simples e conhecidas.',
+    B1: 'Se vira em viagem, trabalho e conversa sobre assuntos do dia a dia.',
+    B2: 'Conversa com fluência com nativos e entende textos mais complexos.',
+    C1: 'Usa o inglês com facilidade em quase qualquer situação.',
+    C2: 'Domina o inglês como um nativo culto.'
+  };
+  function telaEstudar() {
+    const regar = CF.paraRegar(), s = CF.estado.surpresa;
+    const n = CF.diaAtual(), d = CF.dia(n), metas = CF.metas(n);
+    const feitas = metas.filter(p => CF.metaFeita(n, p)).length;
+    const prox = metas.find(p => !CF.metaFeita(n, p));
+    const terminouHoje = s && s.data === CF.hoje() && !s.feita && s.dia && !s.adiantou && !CF.diaCompleto(CF.diaAtual());
+    const semana = CF.semanaDe(n), dSem = CF.DIAS.filter(x => CF.semanaDe(x.n) === semana);
+    const feitosSem = dSem.filter(x => CF.diaCompleto(x.n)).length;
+    const testes = CF.estado.testesNivel || [], ult = testes[testes.length - 1];
+    const fala = CF.voz.podeOuvir() || CF.voz.podeGravar();
+    let aula;
+    if (terminouHoje) {
+      aula = `<section class="cartao-estudo papel r2 aula-feita">
+        <span class="rotulo">Aula de hoje</span>
+        <h2><img src="${IC('check')}" alt="">Dia ${s.dia} completo!</h2>
+        <p>Amanhã tem aula nova. Se estiver com pique, dá pra adiantar.</p>
+        <div class="linha-botoes"><button class="botao laranja c2" data-acao="adiantar">Começar o Dia ${CF.diaAtual()}</button></div>
+      </section>`;
+    } else {
+      const passos = metas.map((p, i) => {
+        const ok = CF.metaFeita(n, p), [nome, txt, ic, min] = PASSO_INFO[p.id] || [NOME_PASSO[p.id], '', 'carta', ''];
+        const agora = p === prox;
+        return `<button class="passo-estudo ${ok ? 'ok' : ''} ${agora ? 'agora' : ''}" data-acao="meta" data-id="${p.id}">
+          <span class="passo-num">${ok ? `<img src="${IC('check')}" alt="feito">` : i + 1}</span>
+          <span class="passo-txt"><b>${esc(nome)}</b><small>${esc(txt)}</small></span>
+          <span class="passo-lado">${agora ? '<span class="botao mini laranja c2">Começar</span>' : ok ? '<small>feito</small>' : `<small>${min}</small>`}</span>
+        </button>`;
+      }).join('');
+      aula = `<section class="cartao-estudo papel r2">
+        <div class="linha-topo"><span class="rotulo">Aula de hoje · Dia ${n}</span><button class="link" data-acao="abrirDia" data-n="${n}">Detalhes</button></div>
+        <h2>${esc(d.tema)}</h2>
+        <div class="barra verde"><i style="width:${(feitas / metas.length * 100).toFixed(0)}%"></i></div>
+        <small class="progresso-txt">${feitas} de ${metas.length} etapas · uns 20 minutos</small>
+        <div class="passos-estudo">${passos}</div>
+      </section>`;
+    }
+    return `<main class="tela estudar" data-tela="estudar">
+      <header class="estudo-topo">
+        <div class="estudo-ola">
+          <span class="rotulo">Semana ${semana} de 12 · Dia ${n} de ${CF.DIAS.length}</span>
+          <h1>${feitas === metas.length || terminouHoje ? 'Mandou bem hoje!' : feitas ? 'Continua de onde parou' : 'Bora estudar?'}</h1>
+          <div class="estudo-chips">
+            <span class="chip-info"><img src="${IC('chama')}" alt="">${plural(CF.sequencia(), 'dia seguido', 'dias seguidos')}</span>
+            <span class="chip-info"><img src="${PLANTA('frutos')}" alt="">${CF.dominadas()} de ${CF.plantas().length} frases dominadas</span>
+          </div>
+        </div>
+        <button class="estudo-pet" data-acao="tela" data-tela="casa" aria-label="Ver o quarto do Torrão">${CF.petHtml(CF.faseMostrada(), CF.humor(), 78, 'data-solto="0"')}</button>
+      </header>
+      <div class="secao estudo-secao">
+        ${ui.novaVersao ? `<button class="versao-nova faixa" data-acao="atualizar">Versão nova do app! Toca pra baixar</button>` : ''}
+        ${aula}
+        <section class="cartao-estudo papel r4">
+          <div class="cartao-linha"><img class="cartao-ic" src="${IC('gota')}" alt="">
+            <div><h3>Revisão</h3><p>${regar.length ? `${plural(regar.length, 'frase está', 'frases estão')} pedindo revisão. Revisar na hora certa é o que faz você não esquecer.` : 'Tudo revisado por hoje. As próximas aparecem quando chegar a hora.'}</p></div></div>
+          ${regar.length ? `<button class="botao azul cheio c1" data-acao="regar"><img src="${IC('gota')}" alt="">Revisar ${plural(regar.length, 'frase', 'frases')}</button>` : ''}
+        </section>
+        <section class="cartao-estudo papel r5">
+          <div class="cartao-linha"><img class="cartao-ic" src="${IC(fala ? 'mic' : 'fala')}" alt="">
+            <div><h3>Conversar em inglês</h3><p>${fala ? 'Fala com o Torrão por voz. Ele ouve o que você disse de verdade e corrige gramática e pronúncia.' : 'Conversa escrevendo com o Torrão. Ele corrige seus erros com jeitinho.'}</p></div></div>
+          <div class="linha-botoes">
+            <button class="botao laranja c2" data-acao="abrirConversa" data-n="${n}" ${fala ? 'data-voz="1"' : ''}>${fala ? 'Conversar falando' : 'Conversar'}</button>
+            <button class="botao kraft c3" data-acao="perguntar">Tirar uma dúvida</button>
+          </div>
+        </section>
+        <section class="cartao-estudo papel r6">
+          <div class="cartao-linha"><img class="cartao-ic" src="${IC('trofeu')}" alt="">
+            <div><h3>${ult ? `Seu nível: ${ult.geral}` : 'Qual é o seu nível?'}</h3>
+            <p>${ult ? `${esc(NIVEL_TXT[ult.geral] || '')} Teste feito em ${ult.data.split('-').reverse().join('/')}.` : 'Teste completo de vocabulário, gramática, leitura, escuta, escrita e fala. Uns 25 minutos, com nível no padrão internacional (A1 a C2).'}</p></div></div>
+          <div class="linha-botoes">${ult ? `<button class="botao kraft c1" data-acao="verTeste">Ver o resultado</button><button class="botao kraft c3" data-acao="testeNivel">Refazer</button>` : `<button class="botao verde c3" data-acao="testeNivel">Fazer o teste de nível</button>`}</div>
+        </section>
+        <section class="cartao-estudo papel r1">
+          <div class="cartao-linha"><img class="cartao-ic" src="${IC('estrela')}" alt="">
+            <div><h3>Plano de ${CF.DIAS.length} dias</h3><p>Semana ${semana}: ${feitosSem} de ${dSem.length} dias feitos.</p></div></div>
+          <div class="semana-pontos">${dSem.map(x => `<i class="${CF.diaCompleto(x.n) ? 'ok' : ''} ${x.n === n ? 'hoje' : ''}"></i>`).join('')}</div>
+          <button class="botao kraft c4" data-acao="tela" data-tela="hoje">Ver o plano completo</button>
+        </section>
+      </div>
+    </main>`;
+  }
+
+
+  // ---------- teste de nível (CEFR): vocabulário, gramática, leitura, escuta, escrita e fala ----------
+  // As 4 primeiras partes são de múltipla escolha (corrigidas no app); escrita e fala são avaliadas pela IA (ela ouve o áudio).
+  const NIVEIS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+  const PARTES = { vocab: 'Vocabulário', gramatica: 'Gramática', leitura: 'Leitura', escuta: 'Escuta', escrita: 'Escrita', fala: 'Fala' };
+  const PARTE_DICA = {
+    vocab: 'Escolhe a palavra certa.', gramatica: 'Escolhe o que completa a frase.', leitura: 'Lê o texto e responde.',
+    escuta: 'Ouve com atenção e responde. Dá pra ouvir de novo 2 vezes.'
+  };
+  const TREINAR = {
+    vocab: 'Vocabulário: faz as frases do app todo dia e uns 10 minutos de Anki.',
+    gramatica: 'Gramática: pratica escrevendo no app e lê a dica da IA quando errar.',
+    leitura: 'Leitura: lê coisas curtas em inglês sobre o que você gosta (notícias de jogo, posts, legendas).',
+    escuta: 'Escuta: vídeos com legenda em inglês e, depois, o mesmo trecho sem legenda.',
+    escrita: 'Escrita: escreve 3 ou 4 frases por dia na conversa com o Torrão.',
+    fala: 'Fala: conversa falando com o Torrão todo dia, nem que seja 5 minutos.'
+  };
+  let tn = null;
+
+  function abrirTeste() {
+    const T = CF.TESTE_NIVEL, ord = (a, b) => NIVEIS.indexOf(a.n) - NIVEIS.indexOf(b.n);
+    const itens = [];
+    T.vocab.slice().sort(ord).forEach(q => itens.push(Object.assign({ sec: 'vocab' }, q)));
+    T.gramatica.slice().sort(ord).forEach(q => itens.push(Object.assign({ sec: 'gramatica' }, q)));
+    T.leitura.slice().sort(ord).forEach(tx => tx.perguntas.forEach(q => itens.push(Object.assign({ sec: 'leitura', n: tx.n, titulo: tx.titulo, texto: tx.texto }, q))));
+    T.escuta.slice().sort(ord).forEach(q => itens.push(Object.assign({ sec: 'escuta', ouviu: 0 }, q)));
+    tn = { fase: 'intro', itens, pos: 0, resp: [], escrita: null, fala: null };
+    renderTeste();
+  }
+
+  function nivelParte(itens) {
+    // o nível da parte é o mais alto que a pessoa acerta (60% ou mais) sem ter falhado num nível abaixo
+    let nivel = 0;
+    for (let k = 0; k < 5; k++) {
+      const qs = itens.filter(q => q.n === NIVEIS[k]);
+      if (!qs.length) continue;
+      const ok = qs.filter(q => q.certo).length / qs.length;
+      if (ok >= 0.6) nivel = k; else break;
+    }
+    return nivel;
+  }
+
+  function nivelObjetivo() {
+    const r = {};
+    ['vocab', 'gramatica', 'leitura', 'escuta'].forEach(s => { r[s] = nivelParte(tn.itens.filter(q => q.sec === s)); });
+    return r;
+  }
+
+  function renderTeste() {
+    if (!tn) return;
+    const total = tn.itens.length + 2;
+    let feitas = tn.fase === 'q' ? tn.pos : tn.fase === 'intro' ? 0 : tn.fase === 'escrita' ? tn.itens.length : tn.fase === 'fala' ? tn.itens.length + 1 : total;
+    let corpo = '';
+    if (tn.fase === 'intro') {
+      const ia = CF.ia.pronta();
+      corpo = `<div class="bilhete-rev papel r3 teste-intro"><span class="fita"></span>
+        <div class="rev-dica">TESTE DE NÍVEL</div>
+        <div class="rev-pergunta">Descubra seu nível de inglês</div>
+        <ol class="teste-partes">
+          <li><b>Vocabulário</b> e <b>gramática</b>: escolher a resposta certa</li>
+          <li><b>Leitura</b>: 3 textos curtos</li>
+          <li><b>Escuta</b>: ouvir frases e áudios</li>
+          <li><b>Escrita</b>: um texto curto em inglês${ia ? '' : ' (precisa da chave da IA)'}</li>
+          <li><b>Fala</b>: falar uns 30 a 60 segundos${ia && CF.voz.podeGravar() ? '' : ia ? ' (precisa de microfone)' : ' (precisa da chave da IA)'}</li>
+        </ol>
+        <p class="apr-txt">Uns 25 minutos. As perguntas vão ficando mais difíceis: se não souber, chuta ou escolhe a que parecer melhor. Ninguém acerta tudo.</p>
+        <p class="apr-txt" style="font-size:13px">O resultado sai no padrão internacional (A1 a C2), igual aos testes oficiais.</p>
+      </div>
+      <button class="botao grande laranja cheio c2" data-acao="tnComecar">Começar o teste</button>`;
+    } else if (tn.fase === 'q') {
+      const q = tn.itens[tn.pos], primeira = !tn.pos || tn.itens[tn.pos - 1].sec !== q.sec;
+      const ordem = ['vocab', 'gramatica', 'leitura', 'escuta'].indexOf(q.sec) + 1;
+      corpo = `<div class="bilhete-rev papel r3 teste-q"><span class="fita"></span>
+        <div class="rev-dica">PARTE ${ordem} DE 6 · ${PARTES[q.sec].toUpperCase()}</div>
+        ${primeira ? `<p class="teste-dica">${PARTE_DICA[q.sec]}</p>` : ''}
+        ${q.sec === 'leitura' ? `<div class="teste-texto"><b>${esc(q.titulo || '')}</b><p>${esc(q.texto)}</p></div>` : ''}
+        ${q.sec === 'escuta' ? `<div style="display:flex; justify-content:center"><button class="botao azul c1" data-acao="tnOuvir" ${q.ouviu >= 3 ? 'disabled' : ''}><img src="${IC('fone')}" alt="">${q.ouviu ? `Ouvir de novo (${3 - q.ouviu})` : 'Ouvir'}</button></div>` : ''}
+        <div class="rev-pergunta teste-p">${esc(q.p)}</div>
+        <div class="teste-ops">${q.op.map((o, i) => `<button class="teste-op" data-acao="tnResp" data-i="${i}">${esc(o)}</button>`).join('')}</div>
+      </div>`;
+    } else if (tn.fase === 'escrita') {
+      const e = tn.escrita, palavras = (e.texto.trim().match(/\S+/g) || []).length;
+      corpo = `<div class="bilhete-rev papel r3"><span class="fita"></span>
+        <div class="rev-dica">PARTE 5 DE 6 · ESCRITA</div>
+        <div class="rev-pergunta teste-p">${esc(e.tarefa.tarefa)}</div>
+        <textarea id="tnTexto" class="teste-area" placeholder="Escreve em inglês aqui..." autocapitalize="sentences" spellcheck="false">${esc(e.texto)}</textarea>
+        <div class="teste-cont"><span id="tnCont">${palavras}</span> palavras (pede pelo menos ${e.tarefa.min})</div>
+      </div>
+      <button class="botao grande laranja cheio c2" data-acao="tnEscrita">Enviar o texto</button>
+      <button class="link" data-acao="tnPularEscrita">Pular essa parte</button>`;
+    } else if (tn.fase === 'fala') {
+      const f = tn.fala;
+      corpo = `<div class="bilhete-rev papel r3"><span class="fita"></span>
+        <div class="rev-dica">PARTE 6 DE 6 · FALA</div>
+        <div class="rev-pergunta teste-p">${esc(f.tarefa.tarefa)}</div>
+        <p class="teste-dica">${esc(f.tarefa.dica)}</p>
+        <div class="chat-voz" style="padding:6px 0 0">
+          <div class="voz-status">${f.gravando ? `Gravando... <span id="tnTempo">${f.seg || 0}</span>s (fala uns 30 a 60 segundos)` : f.aviso || 'Toca no microfone e fala em inglês. Toca de novo quando terminar.'}</div>
+          <button class="mic ${f.gravando ? 'ouvindo' : ''}" data-acao="tnGravar" aria-label="Gravar"><img src="${IC('mic')}" alt=""></button>
+        </div>
+      </div>
+      <button class="link" data-acao="tnPularFala">Pular essa parte</button>`;
+    } else if (tn.fase === 'avaliando') {
+      corpo = `<div class="bilhete-rev papel r3"><span class="fita"></span>
+        <div class="rev-pergunta">Calculando seu nível...</div>
+        <div class="corrigindo"><span class="bolinhas"><i></i><i></i><i></i></span>A IA está avaliando sua escrita e sua fala. Leva uns segundos.</div>
+      </div>`;
+    } else if (tn.fase === 'fim') {
+      $camada.innerHTML = resultadoTesteHtml(tn.resultado, true);
+      return;
+    }
+    $camada.innerHTML = `<div class="revisao estudo teste" role="dialog" aria-label="Teste de nível"><div class="ceu"></div><div class="rev">
+      <div class="rev-topo">${FECHAR('tnSair')}<div class="barra verde"><i style="width:${(feitas / total * 100).toFixed(0)}%"></i></div><span class="rev-cont">${Math.min(feitas + 1, total)}/${total}</span></div>
+      ${corpo}</div></div>`;
+    const area = document.getElementById('tnTexto');
+    if (area) area.addEventListener('input', () => {
+      tn.escrita.texto = area.value;
+      const c = document.getElementById('tnCont');
+      if (c) c.textContent = (area.value.trim().match(/\S+/g) || []).length;
+    });
+    if (tn.fase === 'q' && tn.itens[tn.pos].sec === 'escuta' && !tn.itens[tn.pos].ouviu) setTimeout(() => ouvirItem(), 350);
+  }
+
+  function ouvirItem() {
+    const q = tn && tn.itens[tn.pos];
+    if (!q || q.sec !== 'escuta' || q.ouviu >= 3) return;
+    q.ouviu++;
+    CF.falar(q.audio);
+    const b = $camada.querySelector('[data-acao="tnOuvir"]');
+    if (b) { b.innerHTML = `<img src="${IC('fone')}" alt="">Ouvir de novo (${3 - q.ouviu})`; b.disabled = q.ouviu >= 3; }
+  }
+
+  function responderItem(i) {
+    const q = tn.itens[tn.pos];
+    q.escolha = i; q.certo = i === q.c;
+    CF.som.toque();
+    tn.pos++;
+    if (tn.pos < tn.itens.length) { renderTeste(); return; }
+    // fim da múltipla escolha: escrita e fala no nível que a pessoa mostrou até aqui
+    const obj = nivelObjetivo(), media = Math.round((obj.vocab + obj.gramatica + obj.leitura + obj.escuta) / 4);
+    const alvo = NIVEIS[Math.max(1, Math.min(3, media))];
+    const T = CF.TESTE_NIVEL, pega = lista => lista.find(x => x.n === alvo) || lista[lista.length - 1];
+    tn.escrita = { tarefa: pega(T.escrita), texto: '', res: null };
+    tn.fala = { tarefa: pega(T.fala), res: null };
+    if (!CF.ia.pronta()) { finalizarTeste(); return; }
+    tn.fase = 'escrita';
+    renderTeste();
+  }
+
+  function irPraFala() {
+    if (!CF.voz.podeGravar()) { finalizarTeste(); return; }
+    tn.fase = 'fala';
+    renderTeste();
+  }
+
+  function gravarTeste() {
+    const f = tn.fala;
+    if (f.gravando) { CF.voz.pararGravacao(); return; }
+    f.gravando = true; f.seg = 0; f.aviso = '';
+    renderTeste();
+    clearInterval(f.relogio);
+    f.relogio = setInterval(() => { f.seg++; const el = document.getElementById('tnTempo'); if (el) el.textContent = f.seg; }, 1000);
+    const alvo = tn;
+    CF.voz.gravar(ev => {
+      if (tn !== alvo) return;
+      if (ev.tipo === 'nivel') { const m = $camada.querySelector('.mic'); if (m) m.style.setProperty('--nivel', ev.nivel.toFixed(2)); }
+      else if (ev.tipo === 'erro') {
+        clearInterval(f.relogio); f.gravando = false;
+        f.aviso = ev.erro === 'silencio' ? 'Não ouvi nada. Toca no microfone e tenta de novo.' : 'O app precisa do microfone. Toca de novo e permite.';
+        renderTeste();
+      } else if (ev.tipo === 'audio') {
+        clearInterval(f.relogio); f.gravando = false;
+        if (ev.segundos < 8) { f.aviso = 'Ficou bem curtinho. Tenta falar pelo menos uns 30 segundos.'; renderTeste(); return; }
+        f.promessa = CF.ia.avaliarFala(ev.base64, f.tarefa.tarefa).then(r => { f.res = r; }).catch(e => { f.erro = e.message; });
+        finalizarTeste();
+      }
+    }, { manual: true, max: 90 });
+  }
+
+  async function finalizarTeste() {
+    const alvo = tn;
+    tn.fase = 'avaliando';
+    renderTeste();
+    try { await Promise.all([tn.escrita && tn.escrita.promessa, tn.fala && tn.fala.promessa].filter(Boolean)); } catch (e) { /* cada parte guarda o próprio erro */ }
+    if (tn !== alvo) return;
+    const obj = nivelObjetivo(), skills = {};
+    Object.keys(obj).forEach(s => { skills[s] = NIVEIS[obj[s]]; });
+    const valido = n => NIVEIS.includes(String(n || '').toUpperCase()) ? String(n).toUpperCase() : null;
+    const esc2 = tn.escrita && tn.escrita.res, fal = tn.fala && tn.fala.res;
+    if (esc2 && valido(esc2.nivel)) skills.escrita = valido(esc2.nivel);
+    if (fal && valido(fal.nivel)) skills.fala = valido(fal.nivel);
+    const idx = Object.values(skills).map(n => NIVEIS.indexOf(n));
+    // nível geral: a média das partes, puxando pra baixo (um nível só conta quando está firme)
+    const geral = NIVEIS[Math.max(0, Math.floor(idx.reduce((a, b) => a + b, 0) / idx.length + 0.25))];
+    const erros = tn.itens.filter(q => !q.certo).map(q => ({ parte: PARTES[q.sec], n: q.n, p: q.sec === 'escuta' ? `${q.p} (áudio: "${q.audio}")` : q.p, certa: q.op[q.c], sua: q.op[q.escolha] }));
+    const acertos = tn.itens.filter(q => q.certo).length;
+    const res = {
+      data: CF.hoje(), geral, skills, acertos, total: tn.itens.length, erros,
+      escrita: esc2 ? { nivel: skills.escrita, comentario: esc2.comentario || '', correcao: esc2.correcao || '', texto: tn.escrita.texto } : (tn.escrita && tn.escrita.erro ? { erro: tn.escrita.erro } : null),
+      fala: fal ? { nivel: skills.fala, comentario: fal.comentario || '', transcricao: fal.transcricao || '' } : (tn.fala && tn.fala.erro ? { erro: tn.fala.erro } : null)
+    };
+    CF.estado.testesNivel = (CF.estado.testesNivel || []).concat([res]).slice(-10);
+    CF.marcarAtividade(); CF.salvar();
+    CF.som.festa();
+    tn.resultado = res; tn.fase = 'fim';
+    renderTeste();
+  }
+
+  function resultadoTesteHtml(r, novo) {
+    const lista = CF.estado.testesNivel || [], i = lista.indexOf(r), antes = i > 0 ? lista[i - 1] : null;
+    const barras = Object.keys(PARTES).filter(s => r.skills[s]).map(s => {
+      const k = NIVEIS.indexOf(r.skills[s]);
+      return `<div class="nivel-barra"><span>${PARTES[s]}</span><div class="barra verde"><i style="width:${((k + 1) / 6 * 100).toFixed(0)}%"></i></div><b>${r.skills[s]}</b></div>`;
+    }).join('');
+    const fracas = Object.keys(r.skills).sort((a, b) => NIVEIS.indexOf(r.skills[a]) - NIVEIS.indexOf(r.skills[b])).slice(0, 2);
+    const falta = ['escrita', 'fala'].filter(s => !r.skills[s]);
+    return `<div class="revisao estudo teste" role="dialog" aria-label="Resultado do teste"><div class="ceu"></div><div class="rev teste-res">
+      <div class="rev-topo">${FECHAR('fechar')}<span class="rotulo" style="flex:1">Resultado do teste · ${r.data.split('-').reverse().join('/')}</span></div>
+      <div class="bilhete-rev papel r2"><span class="fita"></span>
+        <div class="rev-dica">SEU NÍVEL DE INGLÊS</div>
+        <div class="nivel-grande">${r.geral}</div>
+        <p class="apr-txt">${esc(NIVEL_TXT[r.geral] || '')}</p>
+        ${antes ? `<p class="apr-txt" style="font-size:13px">No teste anterior (${antes.data.split('-').reverse().join('/')}): ${antes.geral}</p>` : ''}
+        <p class="apr-txt" style="font-size:13px">Acertou ${r.acertos} de ${r.total} na múltipla escolha.${falta.length ? ` Sem ${falta.map(s => PARTES[s].toLowerCase()).join(' e ')}: o nível geral pode estar impreciso.` : ''}</p>
+      </div>
+      <div class="papel r4 teste-bloco"><h3>Por parte</h3>${barras}</div>
+      ${r.fala && r.fala.comentario ? `<div class="papel r5 teste-bloco"><h3>Sua fala (${r.fala.nivel})</h3><p>${esc(r.fala.comentario)}</p>${r.fala.transcricao ? `<details class="como"><summary>O que a IA ouviu</summary><p class="en">${esc(r.fala.transcricao)}</p></details>` : ''}</div>` : r.fala && r.fala.erro ? `<div class="papel r5 teste-bloco"><h3>Fala</h3><p>A IA não conseguiu avaliar agora (${esc(r.fala.erro)}).</p></div>` : ''}
+      ${r.escrita && r.escrita.comentario ? `<div class="papel r6 teste-bloco"><h3>Sua escrita (${r.escrita.nivel})</h3><p>${esc(r.escrita.comentario)}</p>${r.escrita.correcao ? `<details class="como"><summary>Seu texto corrigido</summary><p class="en">${esc(r.escrita.correcao)}</p></details>` : ''}</div>` : r.escrita && r.escrita.erro ? `<div class="papel r6 teste-bloco"><h3>Escrita</h3><p>A IA não conseguiu avaliar agora (${esc(r.escrita.erro)}).</p></div>` : ''}
+      <div class="papel r1 teste-bloco"><h3>O que treinar agora</h3>${fracas.map(s => `<p>${esc(TREINAR[s])}</p>`).join('')}<p style="font-size:13px; color:var(--tinta-2)">Refaz o teste daqui a umas 4 semanas pra ver quanto você subiu.</p></div>
+      ${r.erros && r.erros.length ? `<div class="papel r3 teste-bloco"><details class="como"><summary>Ver as ${r.erros.length} que você errou</summary>${r.erros.map(e => `<div class="teste-erro"><small>${esc(e.parte)} · ${e.n}</small><p>${esc(e.p)}</p><p>Certa: <b>${esc(e.certa)}</b> · Você: ${esc(e.sua || '')}</p></div>`).join('')}</details></div>` : ''}
+      <button class="botao grande laranja cheio c2" data-acao="fechar">${novo ? 'Voltar a estudar' : 'Fechar'}</button>
+    </div></div>`;
   }
 
   // ---------- Horta: as frases plantadas ----------
@@ -826,6 +1158,7 @@
   function fecharCamada() {
     const voltarDia = rev && rev.modo === 'teste' && rev.dia ? rev.dia : null;
     rev = null; plantaAberta = null; diaAberto = null; ui.folha = null; apr = null; chat = null;
+    if (tn) { CF.voz.pararGravacao(true); if (tn.fala) clearInterval(tn.fala.relogio); tn = null; }
     $camada.innerHTML = '';
     render();
     checarEvolucao();
@@ -935,7 +1268,7 @@
       if (m.role === 'erro') return `<div class="msg erro">${esc(m.content)}</div>`;
       const meu = m.role === 'user';
       let html = esc(m.content).replace(/\n/g, '<br>');
-      if (!meu) html = html.replace(/^(Dica:.*?)(<br>|$)/, '<span class="msg-dica">$1</span>');
+      if (!meu) html = html.replace(/(^|<br>)((?:Dica|Pronúncia):.*?)(?=<br>|$)/g, '$1<span class="msg-dica">$2</span>').replace(/<\/span><br>/g, '</span>');
       const falar = !meu && conversa ? `data-acao="falar" data-texto="${esc(semDica(m.content))}"` : '';
       return `<div class="msg ${meu ? 'eu' : 'ele'}" ${falar}>${html}</div>`;
     }).join('');
@@ -961,7 +1294,7 @@
     }
   }
 
-  const semDica = s => String(s).replace(/^\s*Dica:.*$/gim, '').trim();
+  const semDica = s => String(s).replace(/^\s*(Dica|Pronúncia):.*$/gim, '').trim();
 
   // ---------- conversa falada: o Torrão fala, depois escuta; você fala, ele responde ----------
   const TXT_VOZ = {
@@ -984,6 +1317,7 @@
   }
   function ouvirFala() {
     if (!chat || !chat.voz) return;
+    if (CF.voz.podeGravar() && CF.ia.pronta() && !chat.semAudio) { gravarFala(); return; }
     const alvo = chat;
     chat.estado = 'ouvindo'; chat.parcial = ''; chat.aviso = ''; atualizaVoz();
     CF.voz.ouvir(ev => {
@@ -1007,8 +1341,55 @@
       }
     });
   }
+  // grava a sua voz e manda o ÁUDIO pra IA: ela escreve exatamente o que você falou (com os erros) e corrige gramática e pronúncia
+  function gravarFala() {
+    const alvo = chat;
+    chat.estado = 'ouvindo'; chat.parcial = ''; chat.aviso = ''; chat.gravando = true; atualizaVoz();
+    CF.voz.gravar(ev => {
+      if (chat !== alvo || !chat.voz) return;
+      if (ev.tipo === 'nivel') { const m = $camada.querySelector('.mic'); if (m) m.style.setProperty('--nivel', ev.nivel.toFixed(2)); }
+      else if (ev.tipo === 'falando') { chat.parcial = 'Ouvindo você...'; atualizaVoz(); }
+      else if (ev.tipo === 'erro') {
+        chat.gravando = false;
+        if (ev.erro === 'sem') { chat.semAudio = true; ouvirFala(); return; }
+        chat.estado = 'parado';
+        chat.aviso = ev.erro === 'silencio' ? 'Não ouvi nada. Toca no microfone e fala de novo.' : 'O app precisa do microfone. Toca de novo e permite.';
+        atualizaVoz();
+      } else if (ev.tipo === 'audio') { chat.gravando = false; chat.estado = 'pensando'; enviarAudio(ev.base64); }
+    }, { max: 30 });
+  }
+
+  async function enviarAudio(b64) {
+    if (!chat || chat.esperando) return;
+    const alvo = chat, eu = { role: 'user', content: '(áudio)' };
+    chat.msgs.push(eu); chat.esperando = true; renderChat();
+    try {
+      const hist = chat.msgs.filter(m => m.role !== 'erro' && m !== eu);
+      const r = await CF.ia.conversarAudio(hist, b64, CF.dia(chat.n));
+      if (chat !== alvo) return;
+      eu.content = r.ouvi || '(áudio)';
+      const fala = (r.pronuncia ? `Pronúncia: ${r.pronuncia}\n` : '') + (r.dica ? `Dica: ${r.dica}\n` : '') + r.resposta;
+      chat.msgs.push({ role: 'assistant', content: fala });
+      chat.esperando = false;
+      renderChat();
+      falarTorrao(fala);
+    } catch (e) {
+      if (chat !== alvo) return;
+      chat.msgs.splice(chat.msgs.indexOf(eu), 1);
+      chat.esperando = false;
+      // a IA que ouve áudio falhou (lotada/fora do ar): segue com o reconhecimento de fala do celular
+      if (!/chave/i.test(e.message) && CF.voz.podeOuvir()) {
+        chat.semAudio = true;
+        chat.msgs.push({ role: 'erro', content: 'A IA que ouve áudio não respondeu agora. Vou usar o reconhecimento de fala do celular.' });
+      } else chat.msgs.push({ role: 'erro', content: e.message });
+      chat.estado = 'parado'; chat.aviso = 'Toca no microfone pra falar de novo.';
+      renderChat();
+    }
+  }
+
   function tocarMic() {
     if (!chat || !chat.voz) return;
+    if (chat.estado === 'ouvindo' && chat.gravando) { CF.voz.pararGravacao(); return; }
     if (chat.estado === 'ouvindo') { CF.voz.pararOuvir(); return; }
     if (chat.estado === 'pensando') return;
     CF.voz.calar(); ouvirFala();
@@ -1210,6 +1591,21 @@
         CF.salvar(); fecharCamada(); break;
       }
       case 'chatEnviar': enviarChat(); break;
+      case 'testeNivel': CF.som.toque(); abrirTeste(); break;
+      case 'verTeste': { const l = CF.estado.testesNivel || []; if (l.length) $camada.innerHTML = resultadoTesteHtml(l[l.length - 1], false); break; }
+      case 'tnComecar': CF.som.toque(); tn.fase = 'q'; renderTeste(); break;
+      case 'tnResp': if (tn && tn.fase === 'q') responderItem(Number(b.dataset.i)); break;
+      case 'tnOuvir': ouvirItem(); break;
+      case 'tnEscrita': {
+        const e = tn.escrita, txt = e.texto.trim(), n = (txt.match(/\S+/g) || []).length;
+        if (n < Math.ceil(e.tarefa.min * 0.5)) { aviso(`Escreve um pouco mais: pelo menos ${e.tarefa.min} palavras.`); break; }
+        e.promessa = CF.ia.avaliarEscrita(txt, e.tarefa.tarefa).then(r => { e.res = r; }).catch(er => { e.erro = er.message; });
+        CF.som.marca(); irPraFala(); break;
+      }
+      case 'tnPularEscrita': irPraFala(); break;
+      case 'tnGravar': gravarTeste(); break;
+      case 'tnPularFala': CF.voz.pararGravacao(true); if (tn.fala) clearInterval(tn.fala.relogio); finalizarTeste(); break;
+      case 'tnSair': CF.voz.pararGravacao(true); if (tn && tn.fala) clearInterval(tn.fala.relogio); tn = null; fecharCamada(); break;
       case 'micToque': tocarMic(); break;
       case 'vozOuvir': CF.voz.falar("Hi! Let's practice English together. How was your day?"); break;
       case 'vozVel': CF.voz.salvar({ vel: (CF.voz.cfg().vel || 1) < 1 ? 1 : 0.82 }); render(); CF.voz.falar('This is how fast I talk now.'); break;
@@ -1341,7 +1737,7 @@
       }
       case 'confirmaZerar': ui.confirmaZerar = true; render(); break;
       case 'naoZerar': ui.confirmaZerar = false; render(); break;
-      case 'zerar': CF.zerar(); ui.confirmaZerar = false; ui.tela = 'casa'; aviso('Tudo apagado. Começando do zero.'); render(); break;
+      case 'zerar': CF.zerar(); ui.confirmaZerar = false; ui.tela = 'estudar'; aviso('Tudo apagado. Começando do zero.'); render(); break;
     }
   });
 
@@ -1351,7 +1747,7 @@
     if ($camada.querySelector('.intro')) { CF.estado.introVista = true; CF.salvar(); $camada.innerHTML = ''; render(); return true; }
     if (apr && apr.pos > 0 && apr.pos < apr.ids.length) { apr.pos--; renderAprender(); return true; }
     if ($camada.innerHTML) { fecharCamada(); return true; }
-    if (ui.tela !== 'casa') { ui.tela = 'casa'; render(); return true; }
+    if (ui.tela !== 'estudar') { ui.tela = 'estudar'; render(); return true; }
     return false;
   };
 

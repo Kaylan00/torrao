@@ -9,6 +9,14 @@ window.CF = window.CF || {};
   // (lista conferida em out/2026 em openrouter.ai/api/v1/models; o último é o roteador grátis da OpenRouter, que acha qualquer um no ar)
   const MODELOS = ['google/gemma-4-31b-it:free', 'nvidia/nemotron-3-super-120b-a12b:free', 'thinkingmachines/inkling:free',
     'nvidia/nemotron-3-ultra-550b-a55b:free', 'openrouter/free'];
+  // modelos grátis que OUVEM áudio (a IA escuta a sua voz de verdade, com erro e sotaque, em vez do texto "consertado" do celular)
+  const MODELOS_AUDIO = ['thinkingmachines/inkling-small:free', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', 'thinkingmachines/inkling:free'];
+  const json = txt => {
+    const m = String(txt).match(/\{[\s\S]*\}/);
+    if (!m) return null;
+    try { return JSON.parse(m[0]); } catch (e) { return null; }
+  };
+  const audioMsg = (texto, base64) => ({ role: 'user', content: [{ type: 'text', text: texto }, { type: 'input_audio', input_audio: { data: base64, format: 'wav' } }] });
 
   function cfg() {
     try { return JSON.parse(localStorage.getItem(CHAVE_LOCAL)) || {}; } catch (e) { return {}; }
@@ -28,7 +36,7 @@ window.CF = window.CF || {};
       const c = cfg();
       if (!c.chave) throw new Error('Falta a chave da IA. Coloca nos Ajustes (aba Progresso).');
       opts = opts || {};
-      const modelos = MODELOS;
+      const modelos = opts.modelos || MODELOS;
       let erro;
       for (const modelo of modelos) {
         try { return await this.chamar(c.chave, modelo, mensagens, opts); }
@@ -87,6 +95,48 @@ window.CF = window.CF || {};
       const nota = String(o.nota || '').toLowerCase();
       if (!['acertei', 'quase', 'errei'].includes(nota)) throw new Error('A IA não corrigiu direito. Avalia você mesmo dessa vez.');
       return { nota, explicacao: semEmoji(o.explicacao || ''), correta: semEmoji(o.correta || carta.en[0]) };
+    },
+
+    // conversa por voz com áudio: { ouvi, pronuncia, dica, resposta }
+    async conversarAudio(historico, base64, d) {
+      const sis = 'You are Torrão, a friendly little earth creature having a spoken English conversation with a Brazilian learner (around A2, aiming B1). ' +
+        `Today's topic: ${d && d.ia ? d.ia : 'everyday life'}. You will receive the learner's voice as audio. ` +
+        'Answer ONLY with JSON, nothing before or after: {"ouvi":"...","pronuncia":"...","dica":"...","resposta":"..."}. ' +
+        'ouvi: EXACTLY what the learner said, word for word, as it actually sounded, keeping their grammar mistakes, missing words and any Portuguese words. Do not fix anything here. ' +
+        'pronuncia: if a word was clearly mispronounced, 1 short sentence in Brazilian Portuguese saying which word and how to say it (for example: "work" soa como "uârk", não "uórk"); otherwise "". ' +
+        'dica: if there was a grammar or vocabulary mistake, 1 short sentence in Brazilian Portuguese with the correct way to say it in English; otherwise "". ' +
+        'resposta: your spoken reply in simple, natural English, 1 or 2 short sentences (under 30 words), ending with a question to keep the conversation going. No lists, no symbols, no emojis. ' +
+        'If the learner spoke Portuguese, put in resposta how to say it in English and ask them to try.';
+      const hist = historico.slice(-10).map(m => ({ role: m.role, content: m.content }));
+      const txt = await this.pedir([{ role: 'system', content: sis }].concat(hist, [audioMsg('(learner audio)', base64)]), { temp: 0.4, max: 500, modelos: MODELOS_AUDIO, tempo: 45000 });
+      const o = json(txt);
+      if (!o || !o.resposta) throw new Error('A IA não entendeu o áudio. Tenta falar de novo.');
+      return { ouvi: semEmoji(o.ouvi || ''), pronuncia: semEmoji(o.pronuncia || ''), dica: semEmoji(o.dica || ''), resposta: semEmoji(o.resposta) };
+    },
+
+    // teste de nível: fala (áudio). { transcricao, nivel, fluencia, pronuncia, gramatica, vocabulario, comentario }
+    async avaliarFala(base64, tarefa) {
+      const sis = 'You are a strict, experienced CEFR speaking examiner (IELTS/Cambridge style). Evaluate the learner’s spoken answer from the audio. ' +
+        'Answer ONLY with JSON: {"transcricao":"...","nivel":"B1","fluencia":"B1","pronuncia":"A2","gramatica":"B1","vocabulario":"B1","comentario":"..."}. ' +
+        'transcricao: exactly what was said, keeping mistakes. Each level is one of A1, A2, B1, B2, C1, C2, judged only on what you hear (a very short or mostly Portuguese answer is A1). ' +
+        'comentario: 2 or 3 short sentences in Brazilian Portuguese: what was good and the 2 most important things to improve, with a concrete example.';
+      const txt = await this.pedir([{ role: 'system', content: sis }, audioMsg('Task given to the learner (in Portuguese): ' + tarefa, base64)], { temp: 0.1, max: 600, modelos: MODELOS_AUDIO, tempo: 60000 });
+      const o = json(txt);
+      if (!o || !o.nivel) throw new Error('A IA não conseguiu avaliar a fala.');
+      return o;
+    },
+
+    // teste de nível: escrita. { nivel, gramatica, vocabulario, coerencia, tarefa, comentario, correcao }
+    async avaliarEscrita(texto, tarefa) {
+      const sis = 'You are a strict, experienced CEFR writing examiner (Cambridge style). Evaluate this text written by a Brazilian learner. ' +
+        'Answer ONLY with JSON: {"nivel":"B1","gramatica":"B1","vocabulario":"A2","coerencia":"B1","tarefa":"B1","comentario":"...","correcao":"..."}. ' +
+        'Each level is one of A1, A2, B1, B2, C1, C2, judged only on the text (too short, off-topic or in Portuguese means A1). ' +
+        'comentario: 2 or 3 short sentences in Brazilian Portuguese with what was good and the 2 most important things to improve. ' +
+        'correcao: the learner’s text rewritten in correct, natural English, keeping their ideas.';
+      const txt = await this.pedir([{ role: 'system', content: sis }, { role: 'user', content: `Task (in Portuguese): ${tarefa}\n\nLearner text:\n${texto}` }], { temp: 0.1, max: 900 });
+      const o = json(txt);
+      if (!o || !o.nivel) throw new Error('A IA não conseguiu avaliar a escrita.');
+      return o;
     },
 
     // personalidade do Torrão em cada conversa

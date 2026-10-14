@@ -18,6 +18,8 @@ import android.speech.tts.UtteranceProgressListener;
 import android.speech.tts.Voice;
 import android.view.WindowInsets;
 import android.webkit.JavascriptInterface;
+import android.webkit.PermissionRequest;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -46,6 +48,7 @@ public class MainActivity extends Activity {
     private boolean querOuvir = false;
     private long ultimoNivel = 0;
     private static final int PEDIDO_MICROFONE = 7;
+    private PermissionRequest pedidoWeb;   // o app pediu o microfone pra gravar (getUserMedia)
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -104,6 +107,23 @@ public class MainActivity extends Activity {
                     r.setStatusCodeAndReasonPhrase(404, "Not Found");
                     return r;
                 }
+            }
+        });
+        // gravar áudio de dentro do app (a IA ouve o que você falou de verdade): só libera o microfone, nada mais
+        web.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public void onPermissionRequest(PermissionRequest req) {
+                runOnUiThread(() -> {
+                    boolean soAudio = false;
+                    for (String r : req.getResources()) if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(r)) soAudio = true;
+                    if (!soAudio) { req.deny(); return; }
+                    if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        req.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+                    } else {
+                        pedidoWeb = req;
+                        requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, PEDIDO_MICROFONE);
+                    }
+                });
             }
         });
         setContentView(raiz);
@@ -286,9 +306,15 @@ public class MainActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int pedido, String[] perms, int[] resultados) {
         super.onRequestPermissionsResult(pedido, perms, resultados);
-        if (pedido != PEDIDO_MICROFONE || !querOuvir) return;
+        if (pedido != PEDIDO_MICROFONE) return;
+        boolean ok = resultados.length > 0 && resultados[0] == PackageManager.PERMISSION_GRANTED;
+        if (pedidoWeb != null) {
+            if (ok) pedidoWeb.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE}); else pedidoWeb.deny();
+            pedidoWeb = null;
+        }
+        if (!querOuvir) return;
         querOuvir = false;
-        if (resultados.length > 0 && resultados[0] == PackageManager.PERMISSION_GRANTED) comecarOuvir();
+        if (ok) comecarOuvir();
         else { avisaOuvido("erro", null, "permissao"); avisaOuvido("fim", "", null); }
     }
 

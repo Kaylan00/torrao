@@ -5,7 +5,9 @@ O plano tem 84 dias (2 meses pra chegar no "me viro", mais 1 mês de folga).
 
 ## Como funciona
 
-- Todo dia tem 3 metas: **Aprender** as frases do dia (com áudio), **Praticar** escrevendo e **Falar** um pouco de inglês.
+- A tela inicial é a aula do dia: **Aprender** as frases (com áudio), **Praticar** escrevendo e **Falar** inglês.
+- **Conversa por voz**: você fala, a IA ouve o áudio de verdade e corrige gramática e pronúncia.
+- **Teste de nível** completo (vocabulário, gramática, leitura, escuta, escrita e fala), no padrão A1 a C2.
 - Cada frase vira uma planta na horta. Quando ela pede água, é hora de revisar (revisão espaçada).
 - Acertou, ganha laranja. Laranja alimenta o Torrão e compra móveis pro quarto dele.
 - Completou o dia, o Torrão sai pra passear e no dia seguinte volta com uma frase nova.

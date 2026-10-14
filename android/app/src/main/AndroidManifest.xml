@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- conversa por voz: o Torrão ouve o que você fala em inglês -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
 
     <!-- abrir links (vídeo do YouTube) e achar o leitor de voz do Android -->
     <queries>
