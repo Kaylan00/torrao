@@ -158,3 +158,9 @@ O dono achou a v1 genérica e o bicho duro. A v2:
 - Fala português informal; quer que o Claude decida e execute. Respostas curtas e simples.
 - Listas simples no chat, sem separar por tópicos.
 
+
+## Mais skins e cores (26/10/2026)
+- `CF.SKINS` ganhou 9: Menta, Cobre, Oceano, Neve, Cereja (paradas) e Aurora, Brasa, Galáxia, Fantasminha, que MEXEM:
+  `anim: '<id>'` vira a classe `.anim-<id>` no `.pet` (keyframes no style.css; `filtro` fica só pra miniatura do guarda-roupa).
+  Arco-íris continua no jeito antigo (`filtro: 'arcoiris'`). Com "reduzir movimento" no celular, as animadas ficam paradas.
+- `CF.CORES_ROUPA` ganhou 5: Dourado, Prata e Carvão (sépia/cinza: saem iguais em qualquer peça), Pastel e Bem vivo.

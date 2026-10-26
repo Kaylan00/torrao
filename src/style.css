@@ -132,6 +132,21 @@ body.noite .festa .ceu::after, body.noite .revisao .ceu::after { background: rgb
 .pet .corpo { position: absolute; inset: 0; background-repeat: no-repeat; background-size: 400% 400%; }
 .pet.arcoiris .corpo { animation: arcoiris 6s linear infinite; }
 @keyframes arcoiris { from { filter: hue-rotate(0deg) saturate(1.5); } to { filter: hue-rotate(360deg) saturate(1.5); } }
+/* skins que mexem (26/10/2026): cada uma com o seu jeito */
+.pet.anim-aurora .corpo { animation: aurora 9s ease-in-out infinite alternate; }
+@keyframes aurora { 0% { filter: hue-rotate(80deg) saturate(1.5) brightness(1.05); } 50% { filter: hue-rotate(150deg) saturate(1.7) brightness(1.1); }
+  100% { filter: hue-rotate(250deg) saturate(1.5) brightness(1.05); } }
+.pet.anim-brasa .corpo { animation: brasa 2.6s ease-in-out infinite; }
+@keyframes brasa { 0%, 100% { filter: sepia(.5) saturate(2.4) hue-rotate(-35deg) brightness(.95) drop-shadow(0 0 2px rgba(255, 120, 30, .35)); }
+  50% { filter: sepia(.5) saturate(3) hue-rotate(-28deg) brightness(1.15) drop-shadow(0 0 10px rgba(255, 140, 40, .75)); } }
+.pet.anim-galaxia .corpo { animation: galaxia 7s linear infinite; }
+@keyframes galaxia { 0% { filter: hue-rotate(200deg) saturate(1.7) brightness(.8) drop-shadow(0 0 4px rgba(150, 120, 255, .5)); }
+  50% { filter: hue-rotate(290deg) saturate(1.9) brightness(.85) drop-shadow(0 0 9px rgba(220, 130, 255, .7)); }
+  100% { filter: hue-rotate(200deg) saturate(1.7) brightness(.8) drop-shadow(0 0 4px rgba(150, 120, 255, .5)); } }
+.pet.anim-fantasma .corpo { animation: fantasma 3.4s ease-in-out infinite; }
+@keyframes fantasma { 0%, 100% { filter: saturate(.2) brightness(1.45) opacity(.82); transform: translateY(0); }
+  50% { filter: saturate(.2) brightness(1.55) opacity(.62); transform: translateY(-4%); } }
+@media (prefers-reduced-motion: reduce) { .pet.anim-aurora .corpo, .pet.anim-brasa .corpo, .pet.anim-galaxia .corpo, .pet.anim-fantasma .corpo { animation: none; } }
 .pet .roupa { position: absolute; height: auto; pointer-events: none; --cor: none; }
 /* a sombrinha embaixo da peça é o que faz parecer que ela está apoiada na cabeça */
 .pet .roupa.cabeca { transform: translate(-50%, -100%) rotate(var(--ang, 0deg)); transform-origin: 50% 100%;

@@ -193,8 +193,10 @@ window.CF = window.CF || {};
     const folha = comChapeu ? `assets/pet/anim${fase + 1}_careca.png` : `assets/pet/anim${fase + 1}.png`;
     const ar = comChapeu ? CF.PET_META_CARECA[fase + 1].ar : meta.ar;
     const skin = (opts && opts.skin) || (CF.skinAtual ? CF.skinAtual() : { filtro: '' });
-    const filtro = skin.filtro === 'arcoiris' ? '' : skin.filtro;
-    return `<div class="pet${skin.filtro === 'arcoiris' ? ' arcoiris' : ''}" data-pet="1" data-fase="${fase + 1}" data-careca="${comChapeu ? 1 : 0}" data-humor="${humor}" ${extra || ''} style="--pet-h:${altura}px; --pet-ar:${ar}" role="img" aria-label="Torrão">
+    // skin que mexe: a animação cuida do filtro (arcoiris é a antiga; as novas usam anim)
+    const anim = skin.filtro === 'arcoiris' ? ' arcoiris' : skin.anim ? ' anim-' + skin.anim : '';
+    const filtro = anim ? '' : skin.filtro;
+    return `<div class="pet${anim}" data-pet="1" data-fase="${fase + 1}" data-careca="${comChapeu ? 1 : 0}" data-humor="${humor}" ${extra || ''} style="--pet-h:${altura}px; --pet-ar:${ar}" role="img" aria-label="Torrão">
       <div class="sprite"><div class="corpo" style="background-image:url(${folha});${filtro ? 'filter:' + filtro : ''}"></div>${pecas}</div></div>`;
   };
 })();

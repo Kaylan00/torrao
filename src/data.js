@@ -362,7 +362,17 @@ CF.SKINS = [
   { id: 'lavanda', nome: 'Lavanda', pts: 1600, filtro: 'hue-rotate(230deg) saturate(1.4) brightness(1.08)' },
   { id: 'dourado', nome: 'Dourado', pts: 2200, filtro: 'sepia(.6) saturate(2.6) hue-rotate(-12deg) brightness(1.12)' },
   { id: 'noturno', nome: 'Noturno', pts: 2800, filtro: 'saturate(.4) brightness(.72) contrast(1.25)' },
-  { id: 'arcoiris', nome: 'Arco-íris', pts: 3400, filtro: 'arcoiris' }
+  { id: 'arcoiris', nome: 'Arco-íris', pts: 3400, filtro: 'arcoiris' },
+  // novas (26/10/2026): cores paradas e 4 que mexem (anim = classe .anim-<id> no style.css; filtro = a miniatura)
+  { id: 'menta', nome: 'Menta', pts: 450, filtro: 'hue-rotate(95deg) saturate(1.05) brightness(1.12)' },
+  { id: 'cobre', nome: 'Cobre', pts: 800, filtro: 'sepia(.6) saturate(2.8) hue-rotate(-16deg) brightness(.86) contrast(1.35)' },
+  { id: 'oceano', nome: 'Oceano', pts: 1300, filtro: 'hue-rotate(185deg) saturate(1.45) brightness(.96)' },
+  { id: 'neve', nome: 'Neve', pts: 1900, filtro: 'saturate(.18) brightness(1.38) contrast(.92)' },
+  { id: 'cereja', nome: 'Cereja', pts: 2400, filtro: 'hue-rotate(-42deg) saturate(2) brightness(.94)' },
+  { id: 'aurora', nome: 'Aurora', pts: 3000, filtro: 'hue-rotate(110deg) saturate(1.6)', anim: 'aurora' },
+  { id: 'brasa', nome: 'Brasa', pts: 3600, filtro: 'sepia(.5) saturate(2.6) hue-rotate(-35deg)', anim: 'brasa' },
+  { id: 'galaxia', nome: 'Galáxia', pts: 4000, filtro: 'hue-rotate(215deg) saturate(1.7) brightness(.8)', anim: 'galaxia' },
+  { id: 'fantasma', nome: 'Fantasminha', pts: 4400, filtro: 'saturate(.2) brightness(1.45) opacity(.8)', anim: 'fantasma' }
 ];
 
 // Cores das roupas (filtro só na peça)
@@ -371,7 +381,13 @@ CF.CORES_ROUPA = [
   { id: 'rosa', nome: 'Rosa', filtro: 'hue-rotate(-60deg) saturate(1.4)' },
   { id: 'azul', nome: 'Azul', filtro: 'hue-rotate(170deg) saturate(1.3)' },
   { id: 'verde', nome: 'Verde', filtro: 'hue-rotate(80deg) saturate(1.3)' },
-  { id: 'roxo', nome: 'Roxo', filtro: 'hue-rotate(240deg) saturate(1.3)' }
+  { id: 'roxo', nome: 'Roxo', filtro: 'hue-rotate(240deg) saturate(1.3)' },
+  // novas (26/10/2026): as de sépia/cinza saem iguais em qualquer peça
+  { id: 'dourado', nome: 'Dourado', filtro: 'sepia(1) saturate(3) hue-rotate(-8deg) brightness(1.08)' },
+  { id: 'prata', nome: 'Prata', filtro: 'grayscale(1) brightness(1.3) contrast(1.1)' },
+  { id: 'carvao', nome: 'Carvão', filtro: 'grayscale(.7) brightness(.55) contrast(1.2)' },
+  { id: 'pastel', nome: 'Pastel', filtro: 'saturate(.55) brightness(1.3)' },
+  { id: 'vivo', nome: 'Bem vivo', filtro: 'saturate(2.1) contrast(1.08)' }
 ];
 
 // A Toca do Torrão: móveis comprados com laranjas, cada um num lugar do quarto
