@@ -311,7 +311,11 @@ CF.ROUPAS = [
   { id: 'festa', nome: 'Chapéu de festa', lugar: 'cabeca', pts: 250 },
   { id: 'cogumelo', nome: 'Chapéu de cogumelo', lugar: 'cabeca', pts: 1100 },
   { id: 'boina', nome: 'Boina', lugar: 'cabeca', pts: 650 },
-  { id: 'laranja', nome: 'Chapéu de laranja', lugar: 'cabeca', pts: 1000 }
+  { id: 'laranja', nome: 'Chapéu de laranja', lugar: 'cabeca', pts: 1000 },
+  // 26/10/2026: passaram no zoom (tools/zoom8.py). Fora por enquanto (fresta/pedaço solto no zoom, refazer no Codex):
+  // noel, abobora, marinheiro, coelho, unicornio, obra (na fase 1 fica baixo, com a cabeça aparecendo por cima);
+  // pescador (o Codex mudou a pose do Torrão, recorte vazio)
+  { id: 'gato', nome: 'Gorro de gatinho', lugar: 'cabeca', pts: 550 }
 ];
 
 // TUDO LIBERADO na versão dos amigos e no PC (o dono pediu tudo liberado em 12/10/2026).

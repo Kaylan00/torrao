@@ -164,7 +164,10 @@ O dono achou a v1 genérica e o bicho duro. A v2:
   `anim: '<id>'` vira a classe `.anim-<id>` no `.pet` (keyframes no style.css; `filtro` fica só pra miniatura do guarda-roupa).
   Arco-íris continua no jeito antigo (`filtro: 'arcoiris'`). Com "reduzir movimento" no celular, as animadas ficam paradas.
 - `CF.CORES_ROUPA` ganhou 5: Dourado, Prata e Carvão (sépia/cinza: saem iguais em qualquer peça), Pastel e Bem vivo.
-- Chapéus novos esperando o Codex (26/10/2026): pescador, noel, abobora, obra, marinheiro, coelho, unicornio, gato
+- Chapéus gerados em 26/10/2026 (noite): só o gato passou no zoom e entrou no CF.ROUPAS. noel, abobora,
+  marinheiro, coelho, unicornio (fresta ou pedaço solto), obra (baixo na fase 1) e pescador (recorte vazio: o Codex
+  mudou a pose) ficam pra refazer: apagar tools/art_src/p8_v_<id>.png e rodar gera/recorta/zoom de novo.
+- Chapéus novos (antes de gerar): pescador, noel, abobora, obra, marinheiro, coelho, unicornio, gato
   (`PECAS`/`NOVAS` no arte8.py). Gerar: `python tools/arte8.py gera <ids>` -> `recorta <ids>` -> `ver`/`zoom8.py`/`revisar8.py`
   -> só depois de aprovado no zoom, pôr em `CF.ROUPAS`. Sem o `estilo_a.png` (fora do PC do dono), o anexo 1 vira
   `tools/art_src/p8_exemplo.png` (4 chapéus que já existem vestidos). `gerar_arte_codex.py` agora acha o codex no Linux também.
