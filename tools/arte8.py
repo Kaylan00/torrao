@@ -48,14 +48,25 @@ PECAS = {
     'boina': 'uma boina francesa vinho, caida para um lado, com um cabinho curto em cima',
     'detetive': 'um chapeu de detetive xadrez marrom e bege, com aba na frente e atras e abas laterais amarradas em cima',
     'laranja': 'meia casca de laranja usada como chapeu, laranja vivo por fora, com um cabinho e uma folhinha verde em cima',
+    # peças novas (26/10/2026)
+    'pescador': 'um chapeu de pescador (bucket hat) de tecido amarelo-mostarda, com a aba curta caida em volta da cabeca',
+    'noel': 'um gorro de Papai Noel vermelho, com a barra branca fofa embaixo e um pompom branco na ponta, caida para o lado',
+    'abobora': 'meia abobora laranja usada como chapeu, com gomos marcados, um cabinho verde-escuro e uma folhinha em cima',
+    'obra': 'um capacete de obra amarelo, liso, com uma aba curta na frente e um frisinho no meio de tras para a frente',
+    'marinheiro': 'um chapeu de marinheiro branco, redondo, com a aba toda virada para cima e uma faixinha azul-marinho',
+    'coelho': 'uma tiara com 2 orelhas compridas de coelho brancas com o miolo rosa, em pe no alto da cabeca',
+    'unicornio': 'uma tiara com um chifre de unicornio dourado em espiral no alto da testa e 2 orelhinhas brancas dos lados',
+    'gato': 'um gorro cinza de la com 2 orelhinhas de gato pontudas em cima, com o miolo rosa',
 }
 # cores da planta das costas (folha verde, laranja, flor branca) que o gerador redesenha: não são peça,
 # a não ser que a peça tenha essa cor (aí fica aqui a lista do que MANTER)
 MANTER = {'cowboy': 'marrom', 'detetive': 'marrom', 'urso': 'marrom', 'explorador': 'marrom verde', 'gorro': 'laranja', 'palha': 'laranja', 'cartola': 'laranja', 'flores': 'verde laranja branco',
           'chef': 'branco', 'helice': 'verde laranja', 'pirata': 'branco', 'fones': 'verde branco', 'coroa': 'laranja', 'louros': 'laranja',
           'formatura': 'laranja', 'sapo': 'verde branco', 'viking': 'branco', 'cogumelo': 'branco', 'laranja': 'laranja verde',
-          'festa': 'laranja'}
-NOVAS = ['formatura', 'sapo', 'viking', 'festa', 'cogumelo', 'boina', 'detetive', 'laranja']
+          'festa': 'laranja', 'noel': 'branco', 'abobora': 'laranja verde', 'marinheiro': 'branco', 'coelho': 'branco',
+          'unicornio': 'branco'}
+NOVAS = ['formatura', 'sapo', 'viking', 'festa', 'cogumelo', 'boina', 'detetive', 'laranja',
+         'pescador', 'noel', 'abobora', 'obra', 'marinheiro', 'coelho', 'unicornio', 'gato']
 
 PROMPT = """Use a sua ferramenta de GERAR IMAGEM para criar 1 imagem. Nao escreva codigo e nao crie arquivos: so gere a imagem.
 
@@ -90,6 +101,7 @@ def encaixe(fase):
 
 
 def ref():
+    os.makedirs(SRC, exist_ok=True)
     out = Image.new('RGBA', (QW * 2, QH * 2), (0, 0, 0, 0))
     for f in range(1, 5):
         c = celula(f)
@@ -100,17 +112,40 @@ def ref():
     print('ref ok', out.size)
 
 
+def exemplo():
+    """tools/art_src/p8_exemplo.png = a grade de referência com 4 chapéus que já existem (cartola, palha, gorro,
+    cogumelo), postos como no app. Serve de anexo 1 quando o estilo_a.png não está na máquina."""
+    meta = json.loads(re.search(r'CF\.ROUPA8 = (\{.*\});', open(os.path.join(ROOT, 'src', 'roupa8_meta.js'), encoding='utf-8').read(), re.S).group(1))
+    comp = Image.open(os.path.join(SRC, 'p8_ref.png')).convert('RGBA')
+    for f, pid in zip(range(1, 5), ('cartola', 'palha', 'gorro', 'cogumelo')):
+        x, y, _ = meta[pid][str(f)]
+        ox, oy, esc = encaixe(f)
+        c = celula(f)
+        img = Image.open(os.path.join(DST, '%s_%d.png' % (pid, f))).convert('RGBA')   # já na escala da grade
+        comp.alpha_composite(img, (round(ox + x * esc * c.width), round(oy + y * esc * c.height)))
+    comp.save(os.path.join(SRC, 'p8_exemplo.png'))
+    return os.path.join(SRC, 'p8_exemplo.png')
+
+
 def gera(ids, wsl):
     estilo = os.path.join(SRC, 'estilo_a.png')
     refp = os.path.join(SRC, 'p8_ref.png')
+    if not os.path.exists(refp):
+        ref()
+    texto = PROMPT
+    if not os.path.exists(estilo):
+        estilo = exemplo()
+        texto = PROMPT.replace('Anexo 1 = o estilo aprovado do jogo (papel recortado, formas chapadas SEM contorno, textura de papel).',
+                               'Anexo 1 = exemplo de outras pecas ja vestidas no Torrao (o estilo e o encaixe que o jogo usa: papel recortado, '
+                               'formas chapadas SEM contorno, textura de papel). NAO copie essas pecas: desenhe so a peca pedida.')
     for pid in ids:
         nome = 'p8_v_' + pid
         if os.path.exists(os.path.join(SRC, nome + '.png')):
             continue
-        n, _ = G.gera(nome, PROMPT.format(peca=PECAS[pid]), wsl, [estilo, refp])
-        if n == 0 and not wsl:
+        n, _ = G.gera(nome, texto.format(peca=PECAS[pid]), wsl, [estilo, refp])
+        if n == 0 and not wsl and os.name == 'nt':
             wsl = True
-            n, _ = G.gera(nome, PROMPT.format(peca=PECAS[pid]), wsl, [estilo, refp])
+            n, _ = G.gera(nome, texto.format(peca=PECAS[pid]), wsl, [estilo, refp])
         if n == 0:
             G.status('%s nao gerou nada. Parei.' % nome)
             return

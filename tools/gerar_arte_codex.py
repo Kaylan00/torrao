@@ -7,7 +7,9 @@ import glob, os, shutil, subprocess, sys, time
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'tools', 'art_src')
 GEN = os.path.join(os.path.expanduser('~'), '.codex', 'generated_images')
-CODEX = glob.glob(os.path.join(os.path.expanduser('~'), 'AppData', 'Local', 'OpenAI', 'Codex', 'bin', '*', 'codex.exe'))[0]
+# Windows: o codex.exe do app; Linux/Mac: o codex que estiver no PATH
+CODEX = (glob.glob(os.path.join(os.path.expanduser('~'), 'AppData', 'Local', 'OpenAI', 'Codex', 'bin', '*', 'codex.exe'))
+         or [shutil.which('codex') or 'codex'])[0]
 STATUS = os.path.join(OUT, 'STATUS.txt')
 
 CAB = """Use a sua ferramenta de GERAR IMAGEM para criar 1 imagem. Nao escreva codigo e nao crie arquivos: so gere a imagem.
