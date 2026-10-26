@@ -168,6 +168,9 @@ O dono achou a v1 genérica e o bicho duro. A v2:
   (`PECAS`/`NOVAS` no arte8.py). Gerar: `python tools/arte8.py gera <ids>` -> `recorta <ids>` -> `ver`/`zoom8.py`/`revisar8.py`
   -> só depois de aprovado no zoom, pôr em `CF.ROUPAS`. Sem o `estilo_a.png` (fora do PC do dono), o anexo 1 vira
   `tools/art_src/p8_exemplo.png` (4 chapéus que já existem vestidos). `gerar_arte_codex.py` agora acha o codex no Linux também.
-- Móveis novos esperando o Codex (26/10/2026): `python tools/arte10.py gera` (1 imagem = 9 móveis: balão, quadro de
+- Móveis novos (26/10/2026, PRONTOS e no CF.MOVEIS, conferidos no quarto): `python tools/arte10.py gera` (1 imagem = 9 móveis: balão, quadro de
   estrelas, prateleira de plantas, baú, piano, tapete de laranja, globo, girassol, vitrola) -> `corta` -> conferir olhando
   -> pôr no `CF.MOVEIS` (o `corta` imprime as linhas com lugar e larg). Anexo 1 = `tools/art_src/v10_ref.png` (9 móveis atuais).
+- Cuidado (26/10/2026): `gerar_arte_codex.gera` acha a imagem nova pela pasta ~/.codex/generated_images inteira; se
+  outro projeto estiver usando o Codex ao mesmo tempo, as imagens dele entram como `_extraN`. Rodar sozinho, ou conferir
+  olhando qual é a certa. `arte8.py gera` pede os ids separados por VÍRGULA (`gera pescador,noel,...`).

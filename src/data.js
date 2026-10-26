@@ -462,7 +462,17 @@ CF.MOVEIS = [
   { id: 'tapete_retalhos', nome: 'Tapete de retalhos', lugar: 'chao', preco: 5, larg: 60 },
   { id: 'livros', nome: 'Pilha de livros', lugar: 'frente_e', preco: 3, larg: 17 },
   { id: 'cesto', nome: 'Cesto de laranjas', lugar: 'frente_d', preco: 5, larg: 22 },
-  { id: 'violao', nome: 'Violão', lugar: 'fundo_d', preco: 8, larg: 14 }
+  { id: 'violao', nome: 'Violão', lugar: 'fundo_d', preco: 8, larg: 14 },
+  // novos (26/10/2026, tools/arte10.py)
+  { id: 'balao', nome: 'Balão de ar quente', lugar: 'teto', preco: 7, larg: 20 },
+  { id: 'quadro_estrelas', nome: 'Quadro de estrelas', lugar: 'parede_e', preco: 5, larg: 15 },
+  { id: 'prateleira_plantas', nome: 'Prateleira de plantas', lugar: 'parede_d', preco: 6, larg: 18 },
+  { id: 'bau', nome: 'Baú de laranjas', lugar: 'fundo_e', preco: 8, larg: 26 },
+  { id: 'piano', nome: 'Piano', lugar: 'fundo_d', preco: 10, larg: 30 },
+  { id: 'tapete_laranja', nome: 'Tapete de laranja', lugar: 'chao', preco: 6, larg: 58 },
+  { id: 'globo', nome: 'Globo', lugar: 'frente_e', preco: 5, larg: 17 },
+  { id: 'girassol', nome: 'Vaso de girassóis', lugar: 'frente_e', preco: 4, larg: 18 },
+  { id: 'vitrola', nome: 'Vitrola', lugar: 'frente_d', preco: 7, larg: 20 }
 ];
 
 // Dias de intervalo depois de acertar, por estágio da planta
